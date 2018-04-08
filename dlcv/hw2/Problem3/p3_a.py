@@ -1,7 +1,7 @@
 import cv2
 import numpy as np 
 
-img = cv2.imread('train-10/Coast/image_0006.jpg')
+img = cv2.imread('train-10/Highway/image_0019.jpg')
 gray= cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) 
 sift = cv2.xfeatures2d.SIFT_create()
 kp,des = sift.detectAndCompute(gray,None) 
