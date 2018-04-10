@@ -32,7 +32,7 @@ for doc in os.listdir(args.train_path):
     full_path = os.path.join(args.train_path, doc)
     for image in os.listdir(full_path):
         image = os.path.join(full_path,image)
-        #print('read in image_name:',image)
+        print('read in image_name:',image)
         img = cv2.imread(image)
         #gray= cv2.cvtColor(img,cv2.COLOR_BGR2GRAY) 
         sift = cv2.xfeatures2d.SIFT_create()

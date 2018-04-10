@@ -12,7 +12,7 @@ print('len(kp): ',len(kp))
 #print('des: ',des)
 print('des.shape: ',des.shape)
 
-img=cv2.drawKeypoints(gray,kp,None,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
+img=cv2.drawKeypoints(gray,kp,flags=cv2.DRAW_MATCHES_FLAGS_DRAW_RICH_KEYPOINTS)
 cv2.imwrite('sift_keypoints.jpg',img)
 
 
