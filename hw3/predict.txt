@@ -1,4 +1,465 @@
-O win
-Draw
-X win
-X win
+read in ...
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 0 0 0 
+
+evaluate
+game's not finished yet
+
+generate_next_board
+
+original_board:
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 0 0 0 
+4 4 
+4 3 
+4 2 
+3 4 
+3 3 
+3 2 
+2 1 
+
+next:
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 0 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 1 0 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 1 
+2 2 0 0 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 1 0 
+2 2 0 0 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 1 0 0 
+2 2 0 0 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 0 0 0 
+2 2 0 0 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 1 1 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 1 
+2 2 0 1 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 1 0 
+2 2 0 1 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 1 0 0 
+2 2 0 1 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 0 0 0 
+2 2 0 1 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 1 
+2 2 1 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 1 0 
+2 2 1 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 1 0 0 
+2 2 1 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 0 0 0 
+2 2 1 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 1 1 
+2 2 0 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 1 0 1 
+2 2 0 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 0 0 1 
+2 2 0 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 1 1 0 
+2 2 0 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 0 1 0 
+2 2 0 0 0 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 1 0 0 
+2 2 0 0 0 
+
+
+X 's turn
+whowin,current board : O's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 0 1 1 
+
+evaluate
+game's not finished yet
+
+generate_next_board
+
+original_board:
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 0 
+2 2 0 1 1 
+4 2 
+3 4 
+3 3 
+3 2 
+2 1 
+
+next:
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 2 
+2 2 2 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 2 0 
+2 2 2 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 2 0 0 
+2 2 2 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 0 0 0 
+2 2 2 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 2 2 
+2 2 0 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 2 0 2 
+2 2 0 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 0 0 2 
+2 2 0 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 2 2 0 
+2 2 0 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 0 2 0 
+2 2 0 1 1 
+
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 2 0 0 
+2 2 0 1 1 
+
+
+O 's turn
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 0 2 
+2 2 2 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 1 1 2 
+2 2 2 1 1 
+x_score = 3
+o_score = 2
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 2 0 
+2 2 2 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 1 2 1 
+2 2 2 1 1 
+x_score = 3
+o_score = 1
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 2 0 0 
+2 2 2 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 2 1 1 
+2 2 2 1 1 
+x_score = 3
+o_score = 1
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 0 0 0 
+2 2 2 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 1 1 1 
+2 2 2 1 1 
+x_score = 4
+o_score = 2
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 0 2 2 
+2 2 0 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 1 2 2 
+2 2 1 1 1 
+x_score = 4
+o_score = 2
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 2 0 2 
+2 2 0 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 2 1 2 
+2 2 1 1 1 
+x_score = 3
+o_score = 2
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 0 0 2 
+2 2 0 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 1 1 2 
+2 2 1 1 1 
+x_score = 4
+o_score = 3
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 0 1 2 2 
+1 2 2 2 0 
+2 2 0 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 1 1 2 2 
+1 2 2 2 1 
+2 2 1 1 1 
+x_score = 3
+o_score = 1
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 0 2 0 
+2 2 0 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 1 2 1 
+2 2 1 1 1 
+x_score = 4
+o_score = 2
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+whowin,current board : X's turn
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 2 0 0 
+2 2 0 1 1 
+
+evaluate
+1 2 2 2 2 
+1 1 1 1 2 
+1 2 1 2 2 
+1 2 2 1 1 
+2 2 1 1 1 
+x_score = 3
+o_score = 2
+
+X WIN
+
+reach bottom
+alpha = -1
+beta = 1
+
+Final X win
