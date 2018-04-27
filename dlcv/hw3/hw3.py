@@ -85,7 +85,7 @@ val_input = np.load('val_input.npy')
 print('val_input shape = ',val_input.shape)
 val_label = np.load('val_label.npy')
 print('val_label shape = ',val_label.shape)
-#exit()
+
 ####################################################################################################################
 
 class EpochSaver(Callback):
@@ -135,13 +135,13 @@ x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool' )(x)
 
 o = x
 
-o = ( Conv2D( 4096 , ( 7 , 7 ) , activation='relu' , padding='same'))(o)
+o = ( Conv2D( 512 , ( 7 , 7 ) , activation='relu' , padding='same'))(o)
 o = Dropout(0.5)(o)
-o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
+o = ( Conv2D( 512 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
 o = Dropout(0.5)(o)
 
 o = ( Conv2D( 7 ,  ( 1 , 1 ) , kernel_initializer='he_normal' ))(o)
-o = Conv2DTranspose( 7, 
+o = Conv2DTranspose( 7,  
                      kernel_size=(64,64) ,  
 										 strides=(32,32) ,  
                      padding = 'same',
@@ -165,10 +165,10 @@ model.compile(loss=loss_fn,
                   metrics=['accuracy'])
 model.fit(train_input,
           train_label, 
-          batch_size=1, 
-          epochs=25, 
-          verbose=1,
+          batch_size = 6, 
+          epochs= 40, 
+          verbose= 1,
           validation_data = (val_input,val_label), 
           callbacks=[EpochSaver(model)])
 
-model.save('model_epoch_25.h5')
+model.save('model_epoch_40.h5')
