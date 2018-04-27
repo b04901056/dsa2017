@@ -6,3 +6,4 @@ train_label.npy
 val_input.npy
 val_label.npy
 model_epoch_*
+eval_p/*

@@ -13,7 +13,7 @@ from keras.models import *
 from keras.applications.imagenet_utils import _obtain_input_shape
 import keras.backend as K
 from keras.callbacks import Callback
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+#os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 train_path = 'train'
 validation_path = 'validation'
 
@@ -48,11 +48,9 @@ def rgb2label(filepath):
 train_masks = rgb2label(train_path)
 print('train_masks size = ',train_masks.shape)
 np.save('train_label.npy',train_masks)
-
 val_masks = rgb2label(validation_path)
 print('val_masks size = ',val_masks.shape)
 np.save('val_label.npy',val_masks)
-
 train = os.listdir(train_path)
 for x in train:
     if(x[5]=='m'): continue 
@@ -60,11 +58,9 @@ for x in train:
     read_path = os.path.join(train_path,x)
     tmp = io.imread(read_path) 
     train_sat.append(tmp)
-
 train_input = np.array(train_sat,dtype='uint8')
 print('train_input size = ',train_input.shape)
 np.save('train_input.npy',train_input)
-
 val = os.listdir(validation_path)
 for x in val:
     if(x[5]=='m'): continue
@@ -72,7 +68,6 @@ for x in val:
     read_path = os.path.join(validation_path,x)
     tmp = io.imread(read_path)
     val_sat.append(tmp)
-
 val_input = np.array(val_sat,dtype='uint8')
 print('val_input size = ',val_input.shape)
 np.save('val_input',val_input)
@@ -93,7 +88,8 @@ class EpochSaver(Callback):
         self.model = model 
 
     def on_epoch_end(self, epoch, logs={}):
-        if epoch==1 or epoch==10 or epoch==20:
+        if epoch==1 or epoch==10 or epoch==20 or epoch==40 or epoch =60\
+                    or epoch==80 or epoch==100:
             name = 'model_epoch_' + str(epoch) + '.h5'
             self.model.save(name) 
 print('build model ...')
@@ -135,9 +131,9 @@ x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool' )(x)
 
 o = x
 
-o = ( Conv2D( 512 , ( 7 , 7 ) , activation='relu' , padding='same'))(o)
+o = ( Conv2D( 4096 , ( 3 , 3 ) , activation='relu' , padding='same'))(o)
 o = Dropout(0.5)(o)
-o = ( Conv2D( 512 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
+o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
 o = Dropout(0.5)(o)
 
 o = ( Conv2D( 7 ,  ( 1 , 1 ) , kernel_initializer='he_normal' ))(o)
@@ -155,7 +151,8 @@ model = Model( img_input , o )
 weight_path = 'vgg16_weights_tf_dim_ordering_tf_kernels.h5'
 model.load_weights(weight_path,by_name=True)
 
-optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9)
+#optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9)
+optimizer = 'adam'
 #loss_fn = softmax_sparse_crossentropy_ignoring_last_label
 loss_fn = 'categorical_crossentropy'
 
@@ -165,10 +162,10 @@ model.compile(loss=loss_fn,
                   metrics=['accuracy'])
 model.fit(train_input,
           train_label, 
-          batch_size = 6, 
+          batch_size = 10, 
           epochs= 40, 
           verbose= 1,
           validation_data = (val_input,val_label), 
           callbacks=[EpochSaver(model)])
 
-model.save('model_epoch_40.h5')
+model.save('model_epoch_100.h5')
