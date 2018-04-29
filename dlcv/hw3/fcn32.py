@@ -13,6 +13,7 @@ from keras.models import *
 from keras.applications.imagenet_utils import _obtain_input_shape
 import keras.backend as K
 from keras.callbacks import Callback 
+import keras.callbacks
 from my_classes import DataGenerator
 import matplotlib.pyplot as plt
 
@@ -49,6 +50,9 @@ def rgb2label(filepath):
         masks[mask == 7] = 5  # (White: 111) Barren land                                                                 
         masks[mask == 0] = 6  # (Black: 000) Unknown  
         masks[mask == 4] = 6
+        #print('validation_'+file[:4])
+        #print(masks)
+        #input()
         if filepath=='train' : labels_train['train_'+file[:4]] = masks
         elif filepath=='validation' : labels_validation['validation_'+file[:4]] = masks
 
@@ -63,8 +67,8 @@ for x in train:
     read_path = os.path.join('train',x)
     part_train.append('train_'+x[:4])
     print(read_path)
-    tmp = io.imread(read_path)/255
-    np.save('data/train_'+x[:4]+'.npy',tmp)
+    #tmp = io.imread(read_path)/255
+    #np.save('data/train_'+x[:4]+'.npy',tmp)
 
 val = [file for file in os.listdir('validation') if file.endswith('.jpg')]
 val.sort()
@@ -72,8 +76,8 @@ for x in val:
     read_path = os.path.join('validation',x)
     part_validation.append('validation_'+x[:4])
     print(read_path)
-    tmp = io.imread(read_path)/255
-    np.save('data/validation_'+x[:4]+'.npy',tmp)
+    #tmp = io.imread(read_path)/255
+    #np.save('data/validation_'+x[:4]+'.npy',tmp)
 
 partition['train'] = part_train
 partition['validation'] = part_validation
@@ -90,24 +94,6 @@ class EpochSaver(Callback):
             name = 'model_epoch_' + str(epoch) + '.h5'
             self.model.save(name) 
 
-            plt.plot(history.history['acc'])
-            plt.plot(history.history['val_acc'])
-            plt.title('model accuracy')
-            plt.ylabel('accuracy')
-            plt.xlabel('epoch')
-            plt.legend(['train', 'test'], loc='upper left')
-            plt.savefig('accu_'+str(epoch)+'.png')
-            plt.show()
-
-            plt.plot(history.history['loss'])
-            plt.plot(history.history['val_loss'])
-            plt.title('model loss')
-            plt.ylabel('loss')
-            plt.xlabel('epoch')
-            plt.legend(['train', 'test'], loc='upper left')
-            plt.savefig('loss_'+str(epoch)+'.png')
-            plt.show()
-
 print('build model ...')
 
 input_shape = (512,512,3) 
@@ -121,7 +107,7 @@ x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool' )(x)
 x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1' )(x)
 x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2' )(x)
 x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool' )(x)
-x = BatchNormalization()(x)
+#x = BatchNormalization()(x)
 #f2 = x
 
 
@@ -130,7 +116,7 @@ x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1' )
 x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2' )(x)
 x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3' )(x)
 x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool' )(x)
-x = Dropout(0.25)(x)
+#x = Dropout(0.25)(x)
 #f3 = x
 
 # Block 4
@@ -146,12 +132,12 @@ x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2' )
 x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3' )(x)
 x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool' )(x)
 x = BatchNormalization()(x)
-x = Dropout(0.25)(x)
+#x = Dropout(0.25)(x)
 #f5 =
 
 o = x
 
-o = ( Conv2D( 4096 , ( 3 , 3 ) , activation='relu' , padding='same'))(o)
+o = ( Conv2D( 4096 , ( 3 , 3 ) , activation='relu' , padding='same'))(o) 
 o = Dropout(0.5)(o)
 o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
 o = Dropout(0.5)(o)
@@ -182,6 +168,9 @@ model.compile(loss=loss_fn,
                   optimizer=optimizer,
                   metrics=['accuracy']) 
 
+log_filepath = '/tmp/keras_log'
+tb_cb = keras.callbacks.TensorBoard(log_dir=log_filepath)
+
 history = model.fit_generator(generator=training_generator,
                     validation_data=validation_generator,
                     steps_per_epoch = len(training_generator),
@@ -189,7 +178,7 @@ history = model.fit_generator(generator=training_generator,
                     use_multiprocessing=True,
                     workers=6, 
                     epochs=100, 
-                    callbacks=[EpochSaver(model)])
+                    callbacks=[EpochSaver(model),tb_cb])
  
 model.save('model_epoch_100.h5')
 
