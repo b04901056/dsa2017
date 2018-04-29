@@ -22,7 +22,8 @@ params = {'dim': (512,512),
           'n_classes': 7,
           'n_channels': 3,
           'shuffle': True}
-
+IMAGE_ORDERING = 'channels_first' 
+nClasses = 7
 partition = {}
 labels_train = {}
 labels_validation = {}
@@ -55,6 +56,29 @@ def rgb2label(filepath):
         #input()
         if filepath=='train' : labels_train['train_'+file[:4]] = masks
         elif filepath=='validation' : labels_validation['validation_'+file[:4]] = masks
+def crop( o1 , o2 , i  ):
+    o_shape2 = Model( i  , o2 ).output_shape
+    outputHeight2 = o_shape2[2]
+    outputWidth2 = o_shape2[3]
+
+    o_shape1 = Model( i  , o1 ).output_shape
+    outputHeight1 = o_shape1[2]
+    outputWidth1 = o_shape1[3]
+
+    cx = abs( outputWidth1 - outputWidth2 )
+    cy = abs( outputHeight2 - outputHeight1 )
+
+    if outputWidth1 > outputWidth2:
+        o1 = Cropping2D( cropping=((0,0) ,  (  0 , cx )), data_format=IMAGE_ORDERING  )(o1)
+    else:
+        o2 = Cropping2D( cropping=((0,0) ,  (  0 , cx )), data_format=IMAGE_ORDERING  )(o2)
+	
+    if outputHeight1 > outputHeight2 :
+        o1 = Cropping2D( cropping=((0,cy) ,  (  0 , 0 )), data_format=IMAGE_ORDERING  )(o1)
+    else:
+		    o2 = Cropping2D( cropping=((0, cy ) ,  (  0 , 0 )), data_format=IMAGE_ORDERING  )(o2)
+
+    return o1 , o2 
 
 rgb2label('train') 
 rgb2label('validation') 
@@ -67,8 +91,8 @@ for x in train:
     read_path = os.path.join('train',x)
     part_train.append('train_'+x[:4])
     print(read_path)
-    #tmp = io.imread(read_path)/255
-    #np.save('data/train_'+x[:4]+'.npy',tmp)
+    tmp = io.imread(read_path).reshape(3,512,512)/255
+    np.save('data_fcn8/train_'+x[:4]+'.npy',tmp)
 
 val = [file for file in os.listdir('validation') if file.endswith('.jpg')]
 val.sort()
@@ -76,8 +100,8 @@ for x in val:
     read_path = os.path.join('validation',x)
     part_validation.append('validation_'+x[:4])
     print(read_path)
-    #tmp = io.imread(read_path)/255
-    #np.save('data/validation_'+x[:4]+'.npy',tmp)
+    tmp = io.imread(read_path).reshape(3,512,512)/255
+    np.save('data_fcn8/validation_'+x[:4]+'.npy',tmp)
 
 partition['train'] = part_train
 partition['validation'] = part_validation
@@ -91,65 +115,75 @@ class EpochSaver(Callback):
 
     def on_epoch_end(self, epoch, logs={}):
         if epoch % 10 == 0 or epoch == 1 :
-            name = 'model_epoch_' + str(epoch) + '.h5'
+            name = 'model_epoch_i_fcn8_' + str(epoch) + '.h5'
             self.model.save(name) 
 
 print('build model ...')
 
-input_shape = (512,512,3) 
-
+input_shape = (3,512,512)
 img_input = Input(shape=input_shape)
-x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1' )(img_input)
-x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool' )(x)
-#f1 = x
+
+x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1', data_format=IMAGE_ORDERING )(img_input)
+x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2', data_format=IMAGE_ORDERING )(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool', data_format=IMAGE_ORDERING )(x)
+f1 = x
 # Block 2
-x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1' )(x)
-x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool' )(x)
-#x = BatchNormalization()(x)
-#f2 = x
+x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2', data_format=IMAGE_ORDERING )(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool', data_format=IMAGE_ORDERING )(x)
+f2 = x
 
-
-#Block 3
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1' )(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2' )(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool' )(x)
-#x = Dropout(0.25)(x)
-#f3 = x
+# Block 3
+x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3', data_format=IMAGE_ORDERING )(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool', data_format=IMAGE_ORDERING )(x)
+f3 = x
 
 # Block 4
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool' )(x)
-#f4 = x
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3', data_format=IMAGE_ORDERING )(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool', data_format=IMAGE_ORDERING )(x)
+f4 = x
 
 # Block 5
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool' )(x)
-x = BatchNormalization()(x)
-#x = Dropout(0.25)(x)
-#f5 =
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2', data_format=IMAGE_ORDERING )(x)
+x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3', data_format=IMAGE_ORDERING )(x)
+x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool', data_format=IMAGE_ORDERING )(x)
+f5 = x
 
-o = x
+o = f5
 
-o = ( Conv2D( 4096 , ( 3 , 3 ) , activation='relu' , padding='same'))(o) 
+o = ( Conv2D( 4096 , ( 3 , 3 ) , activation='relu' , padding='same', data_format=IMAGE_ORDERING))(o)
 o = Dropout(0.5)(o)
-o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
+o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same', data_format=IMAGE_ORDERING))(o)
 o = Dropout(0.5)(o)
-o = BatchNormalization()(o)
 
-o = ( Conv2D( 7 ,  ( 1 , 1 ) , padding = 'valid' , kernel_initializer='he_normal' ))(o)
-o = Conv2DTranspose( 7,  
-                     kernel_size=(64,64) ,  
-                     strides=(32,32) ,  
+o = ( Conv2D( nClasses ,  ( 1 , 1 ) , padding = 'valid' , kernel_initializer='he_normal', data_format=IMAGE_ORDERING ))(o)
+o = Conv2DTranspose( nClasses , kernel_size=(4,4) ,  strides=(2,2) , data_format=IMAGE_ORDERING )(o)
+
+o2 = f4
+o2 = ( Conv2D( nClasses ,  ( 1 , 1 ) , padding = 'valid' , kernel_initializer='he_normal', data_format=IMAGE_ORDERING))(o2)
+	
+o , o2 = crop( o , o2 , img_input )
+	
+o = Add()([ o , o2 ])
+o = Conv2DTranspose( nClasses , kernel_size=(4,4) ,  strides=(2,2) , use_bias=False, data_format=IMAGE_ORDERING )(o)
+o2 = f3 
+o2 = ( Conv2D( nClasses ,  ( 1 , 1 ), padding = 'valid' ,kernel_initializer='he_normal' , data_format=IMAGE_ORDERING))(o2)
+o2 , o = crop( o2 , o , img_input )
+o  = Add()([ o2 , o ])
+
+
+o = Conv2DTranspose( nClasses,  
+                     kernel_size=(16,16) ,  
+                     strides=(8,8) ,  
                      padding = 'same',
                      activation = 'softmax', 
                      use_bias=False ,
+                     data_format=IMAGE_ORDERING, 
                      name='upsampling')(o)
 
 

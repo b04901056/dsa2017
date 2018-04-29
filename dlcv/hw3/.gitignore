@@ -8,3 +8,4 @@ val_label.npy
 model_epoch_*
 eval_p/*
 data/*
+data_fcn8/*
