@@ -45,13 +45,108 @@ def rgb2label(filepath):
         masks[i, mask == 4] = 6
     return masks
 
+def Convblock(channel_dimension, block_no, no_of_convs) :
+    Layers = []
+    for i in range(no_of_convs) :
+        
+        Conv_name = "block_"+str(block_no)+"_conv"+str(i+1)
+        
+        # A constant kernel size of 3*3 is used for all convolutions
+        Layers.append(Convolution2D(channel_dimension,kernel_size = (3,3),padding = "same",activation = "relu",name = Conv_name))
+    
+    Max_pooling_name = "block"+str(block_no)+"_pool"
+    
+    #Addding max pooling layer
+    Layers.append(MaxPooling2D(pool_size=(2, 2), strides=(2, 2),name = Max_pooling_name))
+    
+    return Layers
+
+def FCN_16_helper(image_size):          
+    model = Sequential()
+    model.add(Permute((1,2,3),input_shape = (image_size,image_size,3)))
+    
+    
+    for l in Convblock(64,1,2) :
+        model.add(l)
+    
+    for l in Convblock(128,2,2):
+        model.add(l)
+    
+    for l in Convblock(256,3,3):
+        model.add(l)
+    
+    for l in Convblock(512,4,3):
+        model.add(l)
+    
+    for l in Convblock(512,5,3):
+        model.add(l)
+    
+    
+    model.add(Convolution2D(4096,kernel_size=(7,7),padding = "same",activation = "relu",name = "fc_6"))
+    
+    #Replacing fully connnected layers of VGG Net using convolutions
+    model.add(Convolution2D(4096,kernel_size=(1,1),padding = "same",activation = "relu",name = "fc7"))
+    
+    
+    # Gives the classifications scores for each of the 21 classes including background
+    model.add(Convolution2D(7,kernel_size=(1,1),padding="same",activation="relu",name = "score_fr"))
+    
+    
+    Conv_size = model.layers[-1].output_shape[2] #16 if image size if 512
+    print(Conv_size)
+    
+    model.add(Deconvolution2D(7,kernel_size=(4,4),strides = (2,2),padding = "valid",activation=None,name = "score2"))
+    
+    # O = ((I-K+2*P)/Stride)+1 
+    # O = Output dimesnion after convolution
+    # I = Input dimnesion
+    # K = kernel Size
+    # P = Padding
+    
+    # I = (O-1)*Stride + K 
+    Deconv_size = model.layers[-1].output_shape[2] #34 if image size is 512*512
+    
+    print(Deconv_size)
+    # 2 if image size is 512*512
+    Extra = (Deconv_size - 2*Conv_size)
+    
+    print(Extra)
+    
+    #Cropping to get correct size
+    model.add(Cropping2D(cropping=((0,Extra),(0,Extra))))
+    return model
+
+def FCN_16(image_size) :
+    fcn_16 = FCN_16_helper(512)
+    
+    #Calculating conv size after the sequential block
+    #32 if image size is 512*512
+    Conv_size = fcn_16.layers[-1].output_shape[2] 
+    
+    skip_con = Convolution2D(7,kernel_size=(1,1),padding = "same",activation=None, name = "score_pool4")
+    
+    #Addig skip connection which takes adds the output of Max pooling layer 4 to current layer
+    Summed = add(inputs = [skip_con(fcn_16.layers[14].output),fcn_16.layers[-1].output])
+    
+    
+    Up = Deconvolution2D(7,kernel_size=(32,32),strides = (16,16),padding = "valid",activation = None,name = "upsample_new")
+    
+    #528 if image size is 512*512
+    Deconv_size = (Conv_size-1)*16+32
+    
+    #16 if image size is 512*512
+    extra_margin = (Deconv_size - Conv_size*16)
+    
+    #Cropping to get the original size of the image
+    crop = Cropping2D(cropping = ((0,extra_margin),(0,extra_margin)))
+    return Model(fcn_16.input, crop(Up(Summed)))
 train_masks = rgb2label(train_path)
 #print('train_masks size = ',train_masks.shape)
-np.save('train_label.npy',train_masks)
+np.save('/datadrive/data/train_label.npy',train_masks)
 
 val_masks = rgb2label(validation_path)
 #print('val_masks size = ',val_masks.shape)
-np.save('val_label.npy',val_masks)
+np.save('/datadrive/data/val_label.npy',val_masks)
 
 train = [file for file in os.listdir(train_path) if file.endswith('.jpg')]
 for x in train:  
@@ -60,7 +155,7 @@ for x in train:
     tmp = io.imread(read_path) 
     train_sat.append(tmp)
 train_input = np.array(train_sat)
-np.save('train_input.npy',train_input)
+np.save('/datadrive/data/train_input.npy',train_input)
 
 val = [file for file in os.listdir(validation_path) if file.endswith('.jpg')]
 for x in val:
@@ -69,15 +164,15 @@ for x in val:
     tmp = io.imread(read_path)
     val_sat.append(tmp)
 val_input = np.array(val_sat)
-np.save('val_input',val_input)
+np.save('/datadrive/data/val_input',val_input)
 
-train_input = np.load('train_input.npy')
+train_input = np.load('/datadrive/data/train_input.npy')
 print('train_input shape = ',train_input.shape)
-train_label = np.load('train_label.npy')
+train_label = np.load('/datadrive/data/train_label.npy')
 print('train_label shape = ',train_label.shape)
-val_input = np.load('val_input.npy')
+val_input = np.load('/datadrive/data/val_input.npy')
 print('val_input shape = ',val_input.shape)
-val_label = np.load('val_label.npy')
+val_label = np.load('/datadrive/data/val_label.npy')
 print('val_label shape = ',val_label.shape)
 
 ####################################################################################################################
@@ -87,88 +182,34 @@ class EpochSaver(Callback):
         self.model = model 
 
     def on_epoch_end(self, epoch, logs={}):
-        if epoch==1 or epoch==10 or epoch==20 or epoch==40 or epoch ==60\
-                    or epoch==80 or epoch==100:
-            name = 'model_epoch_' + str(epoch) + '.h5'
-            self.model.save(name) 
+        if epoch%2==0: and epoch==1:
+            name = '/datadrive/model_8s_epoch_' + str(epoch) + '.h5'
+            self.model.save(name)  
+
 print('build model ...')
 
-input_shape = (512,512,3) 
-
-img_input = Input(shape=input_shape)
-x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv1' )(img_input)
-x = Conv2D(64, (3, 3), activation='relu', padding='same', name='block1_conv2' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block1_pool' )(x)
-#f1 = x
-# Block 2
-x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv1' )(x)
-x = Conv2D(128, (3, 3), activation='relu', padding='same', name='block2_conv2' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block2_pool' )(x)
-x = BatchNormalization()(x)
-
-#f2 = x
-
-
-#Block 3
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv1' )(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv2' )(x)
-x = Conv2D(256, (3, 3), activation='relu', padding='same', name='block3_conv3' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block3_pool' )(x)
-#f3 = x
-
-# Block 4
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv1' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv2' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block4_conv3' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block4_pool' )(x)
-#f4 = x
-
-# Block 5
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv1' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv2' )(x)
-x = Conv2D(512, (3, 3), activation='relu', padding='same', name='block5_conv3' )(x)
-x = MaxPooling2D((2, 2), strides=(2, 2), name='block5_pool' )(x)
-x = BatchNormalization()(x)
-#f5 =
-
-o = x
-
-o = ( Conv2D( 4096 , ( 3 , 3 ) , activation='relu' , padding='same'))(o)
-o = Dropout(0.5)(o)
-o = ( Conv2D( 4096 , ( 1 , 1 ) , activation='relu' , padding='same'))(o)
-o = Dropout(0.5)(o)
-o = BatchNormalization()(o)
-
-o = ( Conv2D( 7 ,  ( 1 , 1 ) , padding = 'valid' , kernel_initializer='he_normal' ))(o)
-o = Conv2DTranspose( 7,  
-                     kernel_size=(64,64) ,  
-										 strides=(32,32) ,  
-                     padding = 'same',
-                     activation = 'softmax', 
-                     use_bias=False ,
-                     name='upsampling')(o)
-
-
-model = Model( img_input , o )
+model = FCN_16(512)
 
 weight_path = 'vgg16_weights_tf_dim_ordering_tf_kernels.h5'
 model.load_weights(weight_path,by_name=True)
 
-#optimizer = SGD(lr=0.01, decay=1e-6, momentum=0.9)
-optimizer = 'adam'
-#loss_fn = softmax_sparse_crossentropy_ignoring_last_label
+optimizer = Adam(lr=0.0001)
 loss_fn = 'categorical_crossentropy'
 
 model.summary()
 model.compile(loss=loss_fn,
                   optimizer=optimizer,
-                  metrics=['accuracy'])
+                  metrics=['accuracy']) 
+
+log_filepath = '/tmp/keras_log'
+tb_cb = keras.callbacks.TensorBoard(log_dir=log_filepath)
+
 model.fit(train_input,
           train_label, 
           batch_size = 6, 
           epochs= 100, 
           verbose= 1,
           validation_data = (val_input,val_label), 
-          callbacks=[EpochSaver(model)])
+          callbacks=[EpochSaver(model),tb_cb])
  
 model.save('model_epoch_100.h5')

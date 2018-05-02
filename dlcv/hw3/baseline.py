@@ -1,15 +1,15 @@
-import numpy as np 
+import numpy as np
+from skimage import io 
 import scipy
 import os
 import sys 
-from keras.models import load_model 
+from keras.models import load_model
+from my_classes import DataGenerator
 import argparse
-from PIL import Image 
+from PIL import Image
 
 parser = argparse.ArgumentParser(description='setting module parameter.')
-parser.add_argument('-v', dest='validation',type=str,required=True)
 parser.add_argument('-m', dest='model',type=str,required=True)
-parser.add_argument('-d', dest='dir',type=str,required=True)
 args = parser.parse_args()
 
 index2rgb = {}
@@ -27,17 +27,16 @@ def lable2rgb(filepath,models):
     for file in file_list:
         #if(file!='0013_sat.jpg'): continue
         read_path = os.path.join(filepath,file) 
-        #print(read_path)
+        print(read_path)
         img = scipy.misc.imread(read_path).reshape(1,512,512,3)/255
         result = np.zeros((1,512,512,7))
         for model in models:
-            result+=model.predict(img)  
+            result+=model.predict(img)       
+        result/=len(models)
         #for i in range(5):
              #print(result[0,0,i])
         #print(result[:5])                                                                 
         mask = np.argmax(result,axis=3).reshape(512,512,1)
-        #print(mask[:5])
-        #input()
         #print(mask.shape)
         #input()
         mask = 1 * mask[:,:,0]
@@ -51,12 +50,14 @@ def lable2rgb(filepath,models):
         masks[mask == 6] = index2rgb[6]  # (Black: 000) Unknown  
         #print(masks)
         img = Image.fromarray(masks, 'RGB')
-        img.save(args.dir+'/'+file[:5]+'mask.png')
+        img.save('eval_p/'+file[:5]+'mask.png')
 
-models = []   
-
-models.append(load_model(args.model))
-lable2rgb(args.validation,models)
+models = []    
+models.append(load_model('model_epoch_70.h5'))
+#models.append(load_model('model_epoch_60.h5'))
+#models.append(load_model('model_epoch_50.h5'))
+#models.append(load_model('model_epoch_40.h5'))
+lable2rgb('validation',models)
 
 print('evaluating ...')
-os.system('python3 mean_iou_evaluate.py  -g validation/ -p '+args.dir)
+os.system('python mean_iou_evaluate.py  -g validation/ -p eval_p/')

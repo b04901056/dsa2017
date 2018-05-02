@@ -1,11 +1,5 @@
 train/*
 validation/*
 vgg16_weights_tf_dim_ordering_tf_kernels.h5
-train_input.npy
-train_label.npy
-val_input.npy
-val_label.npy
-model_epoch_*
-eval_p/*
 data/*
-data_fcn8/*
+model/*
