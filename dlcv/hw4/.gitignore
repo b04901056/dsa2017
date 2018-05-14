@@ -2,3 +2,7 @@ test/*
 train/*
 train.csv
 test.csv
+model*
+train.npy
+test.npy
+runs/*
