@@ -193,6 +193,7 @@ class vae(nn.Module):
         #print('res:',res)
         #input()
         return res, mu, logvar 
+
  
 def mse_loss(inp, target):
     out = (inp - target)**2
@@ -211,7 +212,8 @@ def loss_function(recon_x, x, mu, logvar):
     return MSE + KLD*args.lambda_kl , MSE , KLD 
 
 model = vae(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda()
-
+print(model)
+input()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 #training_set = get_data('train',num=args.train_num,name='train',batch_size=args.batch_size,shuffle=True)
