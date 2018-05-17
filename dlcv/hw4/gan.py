@@ -293,12 +293,16 @@ def rand_faces(num,epoch,generator):
 
 for epoch in range(1,args.epoch+1):
 
-    step = train_iter(epoch,net_D,net_G,(epoch-1)*len(training_set)) 
+    #step = train_iter(epoch,net_D,net_G,(epoch-1)*len(training_set)) 
+    
+    #net_D = torch.load('model/dcgan/model_discriminator_140.pt')
+    net_G = torch.load('model/dcgan/model_generator_140.pt')
+    
     rand_faces(10,epoch,net_G)
 
-    if epoch%10 == 0 :
-        torch.save(net_G,'model_generator_'+str(epoch)+'.pt')
-        torch.save(net_D,'model_discriminator_'+str(epoch)+'.pt')
+    #if epoch%10 == 0 :
+        #torch.save(net_G,'model_generator_'+str(epoch)+'.pt')
+        #torch.save(net_D,'model_discriminator_'+str(epoch)+'.pt')
          
 
 

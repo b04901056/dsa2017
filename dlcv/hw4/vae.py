@@ -10,6 +10,8 @@ import torch.optim as optim
 import torchvision
 import random , time , math
 import torchvision.transforms as transforms
+from sklearn.manifold import TSNE 
+import matplotlib.pyplot as plt
 from tensorboardX import SummaryWriter 
 
 parser =  argparse.ArgumentParser(description='vae model')
@@ -20,6 +22,7 @@ parser.add_argument('-lat',type=int,dest='latent_size',required=True)
 parser.add_argument('-lam',type=float,dest='lambda_kl',required=True)
 parser.add_argument('-tm',type=int,dest='test_num',required=True)
 parser.add_argument('-exp',type=str,dest='exp',required=True)
+parser.add_argument('-tsne',type=int,dest='tsne',required=True)
 args = parser.parse_args()
 writer = SummaryWriter('runs/exp_'+args.exp)
 
@@ -212,8 +215,8 @@ def loss_function(recon_x, x, mu, logvar):
     return MSE + KLD*args.lambda_kl , MSE , KLD 
 
 model = vae(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda()
-print(model)
-input()
+#print(model)
+#input()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 #training_set = get_data('train',num=args.train_num,name='train',batch_size=args.batch_size,shuffle=True)
@@ -221,6 +224,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 #print('saved data ...')
 #input()
 
+'''
 arr = np.load('train.npy')[:args.test_num]
 #print(arr)
 #input()
@@ -229,6 +233,7 @@ print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'train')
 training_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=True)
+'''
 
 arr = np.load('test.npy')
 print('loaded testing set')
@@ -335,10 +340,6 @@ def rec_face(num,epoch):
     seq = np.random.randint(2621, size=num).tolist()
     seq = torch.LongTensor(seq)
     z = torch.index_select(testing_set.dataset.img,0,seq)
-    #save = z[0].view(1,3,64,64)
-    #print('save:',save)
-    #input()
-    #torchvision.utils.save_image(save,'save.jpg') 
     img_orig = torchvision.utils.make_grid(z.permute(0,3,1,2),nrow=num,normalize=True)
     #print('z:',z)
     #input()
@@ -355,7 +356,7 @@ def rec_face(num,epoch):
     writer.add_image(str(epoch)+'_original.jpg', img_orig , epoch)
     writer.add_image(str(epoch)+'_reconstruct.jpg', img_recon , epoch)
 
-
+'''
 for epoch in range(1,args.epoch+1):
     train_loss = train(epoch)
     test_loss = test(epoch)
@@ -363,7 +364,53 @@ for epoch in range(1,args.epoch+1):
     rec_face(10,epoch)
     if epoch%50 == 0 :
         torch.save(model,'model_'+str(epoch)+'.pt')
-         
+'''
+#tsne
+z = Variable(testing_set.dataset.img, volatile=True)
+z = z.cuda()
+model = torch.load('model/vae/model_150.pt')
+recon = model.encode(z.permute(0,3,1,2))[0].data.cpu().numpy()[:1500]
+print('recon:',recon)
+print('recon size:',recon.shape)
+#input()
+train_label = []
+label = []
+with open('train.csv') as f:
+    f.readline()
+    for i in range(2621):
+        attr = f.readline().replace('\n','').split(',')[1:]
+        a = float(attr[args.tsne])
+        train_label.append(a)
+
+def tsne(X, n_components):
+    model_tsne = TSNE(n_components=2,init='pca',random_state=2)
+    return model_tsne.fit_transform(X)
+
+for i in range(len(train_label)):
+    if train_label[i] == 1 : label.append('r')
+    else : label.append('g')
+
+def plot_scatter(x, labels, title, txt = False):
+    plt.title(title)
+    ax = plt.subplot()
+    ax.scatter(x[:,0], x[:,1], c = labels)
+    plt.savefig('tsne_rand_2_'+str(args.tsne)+'.png')
+    #plt.show()
+
+layer_tsne = tsne(recon, 2)
+plot_scatter(recon, label, "vae with tsne")
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

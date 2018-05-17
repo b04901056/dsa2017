@@ -6,3 +6,4 @@ model/*
 train.npy
 test.npy
 runs/*
+tsne_result/*
