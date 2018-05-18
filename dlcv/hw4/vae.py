@@ -201,8 +201,7 @@ class vae(nn.Module):
 def mse_loss(inp, target):
     out = (inp - target)**2
     loss = out.sum() # or sum over whatever dimensions
-    return loss/(inp.shape[1]*inp.shape[2]*inp.shape[3])
-0,3,1,2 
+    return loss/(inp.shape[1]*inp.shape[2]*inp.shape[3]) 
 #reconstruction_function = nn.MSELoss()
 
 def loss_function(recon_x, x, mu, logvar):
@@ -224,7 +223,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 #print('saved data ...')
 #input()
 
-'''
+
 arr = np.load('train.npy')[:args.test_num]
 #print(arr)
 #input()
@@ -233,7 +232,7 @@ print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'train')
 training_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=True)
-'''
+
 
 arr = np.load('test.npy')
 print('loaded testing set')
@@ -254,11 +253,17 @@ def asMinutes(s):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
-def train(epoch):
+kld_curve = []
+mse_curve = []
+
+def train(epoch,iteration):
     model.train()
     train_loss = 0
     start = time.time()
+    kld_loss = 0
+    mse_loss = 0
     for step , (batch_x,batch_y,_) in enumerate(training_set):
+        batch_size = len(batch_x) 
         batch_idx = step + 1  
         batch_x = Variable(batch_x).cuda()
         batch_y = Variable(batch_y).cuda()
@@ -268,37 +273,51 @@ def train(epoch):
         loss.backward()
         train_loss+=loss.data[0]
         optimizer.step()
+        kld_loss += KLD / batch_size  
+        mse_loss += MSE / batch_size 
         #print('batch_idx=',batch_idx)
         #print(epoch*len(training_set))
         #input()   
-        writer.add_scalar('MSE_train', MSE.data[0] / len(batch_x), (epoch-1)*len(training_set)+batch_idx)
-        writer.add_scalar('KLD_train', KLD.data[0] / len(batch_x), (epoch-1)*len(training_set)+batch_idx)
-        print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] | Loss: {:.6f} | MSE: {:.6f} | KLD: {:.6f} | step: {} | Time: {} '.format(
+        #writer.add_scalar('MSE_train', MSE.data[0] / len(batch_x), (epoch-1)*len(training_set)+batch_idx)
+        #writer.add_scalar('KLD_train', KLD.data[0] / len(batch_x), (epoch-1)*len(training_set)+batch_idx)
+        print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] | Loss: {:.6f} | MSE: {:.6f} | KLD: {:.6f} | Time: {} '.format(
                    epoch 
-                   , batch_idx * len(batch_x)
+                   , batch_idx * batch_size 
                    , len(training_set.dataset) 
-                   , 100. * batch_idx * len(batch_x) / len(training_set.dataset)
-                   , loss.data[0] / len(batch_x) 
-                   , MSE.data[0] / len(batch_x) 
-                   , KLD.data[0] / len(batch_x)
-                   , (epoch-1)*len(training_set)+batch_idx 
-                   , timeSince(start, batch_idx*len(batch_x)/ len(training_set.dataset)))
+                   , 100. * batch_idx * batch_size / len(training_set.dataset)
+                   , loss.data[0] / batch_size 
+                   , MSE.data[0] / batch_size 
+                   , KLD.data[0] / batch_size 
+                   , timeSince(start, batch_idx * batch_size / len(training_set.dataset)))
                    , end='')
+
+        if batch_idx % 100 == 0 :
+            kld_curve.append(kld_loss/100)
+            mse_curve.append(mse_loss/100)
+            writer.add_scalar('MSE_loss', mse_loss/100 , iteration )
+            writer.add_scalar('KLD_loss', kld_loss/100 , iteration )
+            kld_loss = 0
+            mse_loss = 0
+            iteration += 1    
+    
     print('\n ====> Epoch: {} | Time: {} | Average loss: {:.4f}'.format(
         epoch 
         , timeSince(start,1)
         , train_loss / len(training_set.dataset)))
-    return train_loss / len(training_set)
+
+    return iteration 
+ 
+testing_mse_loss = []
  
 def test(epoch):
     model.eval()
-    test_loss = 0
+    test_mse_loss = 0
     for step , (batch_x,_) in enumerate(testing_set):
         batch_idx = step + 1
         batch_x = Variable(batch_x,volatile=True).cuda()
         recon,mu,logvar = model(batch_x)
         loss , MSE , KLD  = loss_function(recon,batch_x,mu,logvar)
-        test_loss+=loss.data[0]
+        test_mse_loss+=MSE.data[0]
         writer.add_scalar('MSE_test', MSE.data[0] / len(batch_x), (epoch-1)*len(testing_set)+batch_idx)
         writer.add_scalar('KLD_test', KLD.data[0] / len(batch_x), (epoch-1)*len(testing_set)+batch_idx)
         print('\rTest on testing set: | [{}/{} ({:.0f}%)]  Loss: {:.6f} MSE: {:.6f} KLD: {:.6f} '.format(
@@ -309,11 +328,14 @@ def test(epoch):
                    , MSE.data[0] / len(batch_x)
                    , KLD.data[0] / len(batch_x))
                    , end='')
-    print()
-    print('====> Average loss: {:.4f}'.format(
-                  test_loss / len(testing_set.dataset)))
-    print()
-    return test_loss / len(testing_set)
+        
+    testing_mse_loss.append(test_mse_loss/len(testing_set))
+        
+    #print()
+    #print('====> Average loss: {:.4f}'.format(
+                  #test_loss / len(testing_set.dataset)))
+    #print()
+    return test_mse_loss / len(testing_set)
  
 def gaussian(ins , mean, stddev):
     noise = Variable(ins.data.new(ins.size()).normal_(mean, stddev))
@@ -322,9 +344,10 @@ def gaussian(ins , mean, stddev):
 def rand_faces(num,epoch):
     model.eval()    
     #z = torch.randn(num*num, args.latent_size)
-    z = torch.zeros(num,args.latent_size)
-    z = Variable(z, volatile=True)
-    z = gaussian(z,0,1)
+    #z = torch.zeros(num,args.latent_size)
+    z = np.random.normal(0, 1, (num, args.latent_size))
+    z = Variable(torch.FloatTensor(z), volatile=True)
+    #z = gaussian(z,0,1)
     z = z.cuda()
     recon = model.decode(z).permute(0,3,1,2)
     #print('recon:',recon)
@@ -337,7 +360,7 @@ def rand_faces(num,epoch):
 
 def rec_face(num,epoch):
     model.eval()         
-    seq = np.random.randint(2621, size=num).tolist()
+    seq = np.random.randint(2621, size=10).tolist()
     seq = torch.LongTensor(seq)
     z = torch.index_select(testing_set.dataset.img,0,seq)
     img_orig = torchvision.utils.make_grid(z.permute(0,3,1,2),nrow=num,normalize=True)
@@ -356,14 +379,30 @@ def rec_face(num,epoch):
     writer.add_image(str(epoch)+'_original.jpg', img_orig , epoch)
     writer.add_image(str(epoch)+'_reconstruct.jpg', img_recon , epoch)
 
-'''
+iteration = 0
 for epoch in range(1,args.epoch+1):
-    train_loss = train(epoch)
+    np.random.seed(1)
+    iteration = train(epoch,iteration)
     test_loss = test(epoch)
     rand_faces(10,epoch)
     rec_face(10,epoch)
-    if epoch%50 == 0 :
-        torch.save(model,'model_'+str(epoch)+'.pt')
+    if epoch%5 == 0 :
+        torch.save(model,'model/vae_new/model_'+str(epoch)+'.pt')
+    if epoch%30==1:
+        a = np.array(kld_curve)
+        b = np.array(mse_curve)
+        c = np.array(testing_mse_loss)
+        np.save('kld_curve_'+str(epoch)+'.npy',a)
+        np.save('mse_curve_'+str(epoch)+'.npy',b)
+        np.save('testing_mse_loss_'+str(epoch)+'.npy',c)
+
+kld_curve = np.array(kld_curve)
+mse_curve = np.array(mse_curve)
+testing_mse_loss = np.array(testing_mse_loss)
+
+#np.save(kld_curve,'kld_curve.npy')
+#np.save(mse_curve,'mse_curve.npy')
+#np.save(testing_mse_loss,'testing_mse_loss.npy') 
 '''
 #tsne
 z = Variable(testing_set.dataset.img, volatile=True)
@@ -399,7 +438,7 @@ def plot_scatter(x, labels, title, txt = False):
 
 layer_tsne = tsne(recon, 2)
 plot_scatter(recon, label, "vae with tsne")
-
+'''
 
 
 

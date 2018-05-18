@@ -7,3 +7,6 @@ train.npy
 test.npy
 runs/*
 tsne_result/*
+mse_curve*
+kld_curve*
+testing_*

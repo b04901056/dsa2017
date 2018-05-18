@@ -217,11 +217,22 @@ def asMinutes(s):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
+d_real_label_loss_curve = []
+d_fake_label_loss_curve = []
+d_accu_real_curve = []
+d_accu_fake_curve = []
+
 def train_iter(epoch,D,G,iteration):
     dis_loss = 0
     gen_loss = 0
     D.train()
     G.train()
+
+    d_real_label_loss = 0
+    d_fake_label_loss = 0
+    d_accu_real = 0
+    d_accu_fake = 0
+
     start = time.time()
     for step , (batch_x,batch_l) in enumerate(training_set):
         batch_idx = step + 1 
@@ -305,8 +316,8 @@ def train_iter(epoch,D,G,iteration):
         for i in range(batch_size):
             if real_result[i] >= 0.5 : correct_real += 1
             if fake_result[i] <= 0.5 : correct_fake += 1
-            writer.add_scalar('Discriminator_accuracy_real', float(correct_real) / batch_size , iteration)
-            writer.add_scalar('Discriminator_accuracy_fake', float(correct_fake) / batch_size , iteration)
+            #writer.add_scalar('Discriminator_accuracy_real', float(correct_real) / batch_size , iteration)
+            #writer.add_scalar('Discriminator_accuracy_fake', float(correct_fake) / batch_size , iteration)
 
     # Update G network: maximize log(D(G(z)))
         
@@ -331,14 +342,20 @@ def train_iter(epoch,D,G,iteration):
         #input()
         G_train_loss.backward()
         optimizerG.step()
+    
+        d_real_label_loss += D_real_loss_label  
+        d_fake_label_loss += D_fake_loss_label 
+        d_accu_real += float(correct_real) / batch_size 
+        d_accu_fake += float(correct_fake) / batch_size
                         
     # print training status
         
+
         dis_loss += D_train_loss.data[0]
         gen_loss += G_train_loss.data[0]
-        writer.add_scalar('Real_classification_loss', D_real_loss.data[0]/ batch_size , iteration)
-        writer.add_scalar('Fake_classification_loss', D_fake_loss.data[0]/ batch_size , iteration)
-        writer.add_scalar('G_train_loss', G_train_loss.data[0] , iteration)
+        #writer.add_scalar('Real_classification_loss', D_real_loss.data[0]/ batch_size , iteration)
+        #writer.add_scalar('Fake_classification_loss', D_fake_loss.data[0]/ batch_size , iteration)
+        #writer.add_scalar('G_train_loss', G_train_loss.data[0] , iteration)
         print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] | D_Loss: {:.6f} | G_Loss: {:.6f} | step: {} | Time: {} '.format(
                    epoch 
                    , batch_idx * batch_size 
@@ -350,6 +367,20 @@ def train_iter(epoch,D,G,iteration):
                    , timeSince(start, batch_idx*batch_size/ len(training_set.dataset)))
                    , end='')
         iteration += 1
+
+        if batch_idx % 100 == 0:
+            d_real_label_loss_curve.append(d_real_label_loss/100)
+            d_fake_label_loss_curve.append(d_fake_label_loss/100)
+            d_accu_real_curve.append(d_accu_real/100)
+            d_accu_fake_curve.append(d_accu_fake/100)
+            writer.add_scalar('d_real_label_loss_curve', d_real_label_loss/100 , iteration)
+            writer.add_scalar('d_fake_label_loss_curve', d_fake_label_loss/100 , iteration)
+            writer.add_scalar('d_accu_real_curve', d_accu_real/100 , iteration)
+            writer.add_scalar('d_accu_fake_curve', d_accu_fake/100 , iteration)
+            d_real_label_loss = 0
+            d_fake_label_loss = 0
+            d_accu_real = 0
+            d_accu_fake = 0
     print('\n ====> Epoch : {} | Time: {} | D_loss: {:.4f} | G_loss: {:.4f} \n'.format(
                 epoch 
                 , timeSince(start,1)

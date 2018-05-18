@@ -131,8 +131,8 @@ class generator(nn.Module):
         self.tanh = nn.Tanh()
 
     def forward(self,x):
-        #h0 = self.leakyrelu(self.d1(x)) # (1024)
-        h0 = x.view(-1,1024,1,1)
+        h0 = self.leakyrelu(self.d1(x)) # (1024)
+        h0 = h0.view(-1,1024,1,1)
         h1 = self.leakyrelu(self.bn6(self.up1(h0)))
         h2 = self.leakyrelu(self.bn7(self.up2(h1)))
         h3 = self.leakyrelu(self.bn8(self.up3(h2)))
@@ -186,11 +186,20 @@ def asMinutes(s):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
+dis_accu_real = []
+dis_accu_fake = []
+d_real_loss_curve = []
+d_fake_loss_curve = []
+
 def train_iter(epoch,D,G,iteration):
     dis_loss = 0
     gen_loss = 0
     D.train()
     G.train()
+    d_real_loss = 0
+    d_fake_loss = 0
+    d_accu_real = 0
+    d_accu_fake = 0
     start = time.time()
     for step , (batch_x,batch_y,_) in enumerate(training_set):
         batch_idx = step + 1 
@@ -226,15 +235,19 @@ def train_iter(epoch,D,G,iteration):
             #input()
             if real_result[i] >= 0.5 : correct_real += 1
             if fake_result[i] <= 0.5 : correct_fake += 1
-        writer.add_scalar('Discriminator_accuracy_real', float(correct_real/len(batch_x)) , iteration)
-        writer.add_scalar('Discriminator_accuracy_fake', float(correct_fake/len(batch_x)) , iteration)
+        #writer.add_scalar('Discriminator_accuracy_real', float(correct_real/len(batch_x)) , iteration)
+        #writer.add_scalar('Discriminator_accuracy_fake', float(correct_fake/len(batch_x)) , iteration)
 
         # update parameter 
         D_train_loss = D_real_loss + D_fake_loss
         optimizerD.zero_grad()
         D_train_loss.backward()
         optimizerD.step()
-    
+
+        d_real_loss += D_real_loss.data[0]
+        d_fake_loss += D_fake_loss.data[0]
+        d_accu_real += float(correct_real/len(batch_x))
+        d_accu_fake += float(correct_fake/len(batch_x))
     # Update G network: maximize log(D(G(z)))
         
         noise = torch.randn((len(batch_x), args.latent_size))#.view(-1, args.latent_size, 1, 1)
@@ -253,9 +266,9 @@ def train_iter(epoch,D,G,iteration):
         
         dis_loss += D_train_loss.data[0]
         gen_loss += G_train_loss.data[0]
-        writer.add_scalar('D_loss_real', D_real_loss.data[0] , iteration)
-        writer.add_scalar('D_loss_fake', D_fake_loss.data[0] , iteration)
-        writer.add_scalar('G_loss', G_train_loss.data[0] , iteration)
+        #writer.add_scalar('D_loss_real', D_real_loss.data[0] , iteration)
+        #writer.add_scalar('D_loss_fake', D_fake_loss.data[0] , iteration)
+        #writer.add_scalar('G_loss', G_train_loss.data[0] , iteration)
         print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] | D_Loss: {:.6f} | G_Loss: {:.6f} | step: {} | Time: {} '.format(
                    epoch 
                    , batch_idx * len(batch_x)
@@ -267,6 +280,20 @@ def train_iter(epoch,D,G,iteration):
                    , timeSince(start, batch_idx*len(batch_x)/ len(training_set.dataset)))
                    , end='')
         iteration += 1
+        
+        if batch_idx % 100 == 0:
+            d_real_loss_curve.append(d_real_loss/100)
+            d_fake_loss_curve.append(d_fake_loss/100)
+            dis_accu_real.append(d_accu_real/100) 
+            dis_accu_fake.append(d_accu_fake/100)
+            writer.add_scalar('d_real_loss_curve',d_real_loss/100 , iteration)    
+            writer.add_scalar('d_fake_loss_curve',d_fake_loss/100 , iteration)    
+            writer.add_scalar('dis_accu_real',d_accu_real/100 , iteration)    
+            writer.add_scalar('dis_accu_fake',d_accu_fake/100 , iteration)    
+            d_real_loss = 0
+            d_fake_loss = 0
+            d_accu_real = 0
+            d_accu_fake = 0
     print('\n ====> Epoch : {} | Time: {} | D_loss: {:.4f} | G_loss: {:.4f} \n'.format(
                 epoch 
                 , timeSince(start,1)
@@ -292,16 +319,16 @@ def rand_faces(num,epoch,generator):
 
 
 for epoch in range(1,args.epoch+1):
-
-    #step = train_iter(epoch,net_D,net_G,(epoch-1)*len(training_set)) 
+    np.random.seed(1)
+    step = train_iter(epoch,net_D,net_G,(epoch-1)*len(training_set)) 
     
     #net_D = torch.load('model/dcgan/model_discriminator_140.pt')
-    net_G = torch.load('model/dcgan/model_generator_140.pt')
+    #net_G = torch.load('model/dcgan/model_generator_140.pt')
     
     rand_faces(10,epoch,net_G)
 
-    #if epoch%10 == 0 :
-        #torch.save(net_G,'model_generator_'+str(epoch)+'.pt')
+    if epoch%5 == 0 :
+        torch.save(net_G,'model_generator_'+str(epoch)+'.pt')
         #torch.save(net_D,'model_discriminator_'+str(epoch)+'.pt')
          
 
