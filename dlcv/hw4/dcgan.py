@@ -1,3 +1,4 @@
+import scipy.misc
 import numpy as np
 import torch
 from PIL import Image
@@ -144,10 +145,10 @@ class generator(nn.Module):
  
 net_D = discriminator(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda()
 net_G = generator(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda() 
-print(net_D)
-print('-'*50)
-print(net_G)
-print('-'*50) 
+#print(net_D)
+#print('-'*50)
+#print(net_G)
+#print('-'*50) 
 optimizerD = optim.Adam(net_D.parameters(), lr=0.0001, betas=(0.5, 0.999))
 optimizerG = optim.Adam(net_G.parameters(), lr=0.0001, betas=(0.5, 0.999))
 
@@ -157,7 +158,7 @@ criterion = nn.BCELoss()
 #testing_set = get_data('test',num=2621,name='test',batch_size=args.batch_size,shuffle=False)
 #print('saved data ...')
 #input()
-
+'''
 arr = np.load('train.npy')[:args.test_num]
 #print(arr)
 #input()
@@ -166,14 +167,15 @@ print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'train')
 training_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=True)
-
+'''
+'''
 arr = np.load('test.npy')
-print('loaded testing set')
-print(arr.shape)
+#print('loaded testing set')
+#print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'test')
 testing_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=False)
-
+'''
 def timeSince(since, percent):
     now = time.time()
     s = now - since
@@ -186,8 +188,8 @@ def asMinutes(s):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
-dis_accu_real = []
-dis_accu_fake = []
+dis_accu_real_curve = []
+dis_accu_fake_curve = []
 d_real_loss_curve = []
 d_fake_loss_curve = []
 
@@ -198,27 +200,26 @@ def train_iter(epoch,D,G,iteration):
     G.train()
     d_real_loss = 0
     d_fake_loss = 0
-    d_accu_real = 0
-    d_accu_fake = 0
+    dis_accu_real = 0
+    dis_accu_fake = 0
     start = time.time()
     for step , (batch_x,batch_y,_) in enumerate(training_set):
         batch_idx = step + 1 
         batch_x = Variable(batch_x).cuda()
-    
+        batch_size = len(batch_x) 
     # Update D network: maximize log(D(x)) + log(1 - D(G(z)))
             
         # train with real data
-        label_real = torch.ones(len(batch_x))
+        label_real = torch.ones(batch_size)
         label_real_var = Variable(label_real.cuda())
-        
         D_real_result = D(batch_x)
         D_real_loss = criterion(D_real_result, label_real_var)
 
         # train with fake data
-        label_fake = torch.zeros(len(batch_x))
+        label_fake = torch.zeros(batch_size)
         label_fake_var = Variable(label_fake.cuda())
  
-        noise = torch.randn((len(batch_x), args.latent_size))#.view(-1, args.latent_size, 1, 1)
+        noise = torch.randn(batch_size, args.latent_size)#.view(-1, args.latent_size, 1, 1)
         noise_var = Variable(noise.cuda())
         G_result = G(noise_var)
         D_fake_result = D(G_result)
@@ -229,7 +230,7 @@ def train_iter(epoch,D,G,iteration):
         correct_fake = 0
         real_result = D_real_result.data.cpu().numpy()
         fake_result = D_fake_result.data.cpu().numpy()
-        for i in range(len(batch_x)):
+        for i in range(batch_size):
             #print(real_result[i])
             #print(fake_result[i])
             #input()
@@ -246,11 +247,11 @@ def train_iter(epoch,D,G,iteration):
 
         d_real_loss += D_real_loss.data[0]
         d_fake_loss += D_fake_loss.data[0]
-        d_accu_real += float(correct_real/len(batch_x))
-        d_accu_fake += float(correct_fake/len(batch_x))
+        dis_accu_real += float(correct_real / batch_size )
+        dis_accu_fake += float(correct_fake / batch_size ) 
     # Update G network: maximize log(D(G(z)))
         
-        noise = torch.randn((len(batch_x), args.latent_size))#.view(-1, args.latent_size, 1, 1)
+        noise = torch.randn(( batch_size , args.latent_size))#.view(-1, args.latent_size, 1, 1)
         noise_var = Variable(noise.cuda())
         G_result = G(noise_var)
         D_fake_result = D(G_result)
@@ -271,29 +272,29 @@ def train_iter(epoch,D,G,iteration):
         #writer.add_scalar('G_loss', G_train_loss.data[0] , iteration)
         print('\rTrain Epoch: {} [{}/{} ({:.0f}%)] | D_Loss: {:.6f} | G_Loss: {:.6f} | step: {} | Time: {} '.format(
                    epoch 
-                   , batch_idx * len(batch_x)
+                   , batch_idx * batch_size 
                    , len(training_set.dataset) 
-                   , 100. * batch_idx * len(batch_x) / len(training_set.dataset)
+                   , 100. * batch_idx * batch_size / len(training_set.dataset)
                    , D_train_loss.data[0]
                    , G_train_loss.data[0]
                    , iteration
-                   , timeSince(start, batch_idx*len(batch_x)/ len(training_set.dataset)))
+                   , timeSince(start, batch_idx* batch_size / len(training_set.dataset)))
                    , end='')
         iteration += 1
         
         if batch_idx % 100 == 0:
             d_real_loss_curve.append(d_real_loss/100)
             d_fake_loss_curve.append(d_fake_loss/100)
-            dis_accu_real.append(d_accu_real/100) 
-            dis_accu_fake.append(d_accu_fake/100)
+            dis_accu_real_curve.append(dis_accu_real/100) 
+            dis_accu_fake_curve.append(dis_accu_fake/100)
             writer.add_scalar('d_real_loss_curve',d_real_loss/100 , iteration)    
             writer.add_scalar('d_fake_loss_curve',d_fake_loss/100 , iteration)    
-            writer.add_scalar('dis_accu_real',d_accu_real/100 , iteration)    
-            writer.add_scalar('dis_accu_fake',d_accu_fake/100 , iteration)    
+            writer.add_scalar('dis_accu_real',dis_accu_real/100 , iteration)    
+            writer.add_scalar('dis_accu_fake',dis_accu_fake/100 , iteration)    
             d_real_loss = 0
             d_fake_loss = 0
-            d_accu_real = 0
-            d_accu_fake = 0
+            dis_accu_real = 0
+            dis_accu_fake = 0
     print('\n ====> Epoch : {} | Time: {} | D_loss: {:.4f} | G_loss: {:.4f} \n'.format(
                 epoch 
                 , timeSince(start,1)
@@ -308,16 +309,20 @@ def gaussian(ins , mean, stddev):
 def rand_faces(num,epoch,generator):
     generator.eval()    
     #z = torch.randn(num*num, args.latent_size)
-    z = torch.zeros(num,args.latent_size)
-    z = Variable(z, volatile=True)
-    z = gaussian(z,0,1)
+    #z = torch.zeros(num,args.latent_size)
+    #z = Variable(z, volatile=True)
+    #z = gaussian(z,0,1)
+    z = np.random.normal(0, 1, (32, args.latent_size))
+    z = Variable(torch.FloatTensor(z), volatile=True)
     z = z.cuda() # generator(z) shape (-1,64,64,3)
     recon = generator(z).permute(0,3,1,2)
     recon = recon.data 
     img = torchvision.utils.make_grid(recon,nrow=num,normalize=True)
-    writer.add_image(str(epoch)+'_random_sample.jpg', img , epoch)
+    #writer.add_image(str(epoch)+'_random_sample.jpg', img , epoch)
+    recon = torchvision.utils.make_grid(recon,nrow=num,normalize=True)
+    return recon.permute(1,2,0).cpu().numpy()
 
-
+'''
 for epoch in range(1,args.epoch+1):
     np.random.seed(1)
     step = train_iter(epoch,net_D,net_G,(epoch-1)*len(training_set)) 
@@ -327,10 +332,17 @@ for epoch in range(1,args.epoch+1):
     
     rand_faces(10,epoch,net_G)
 
-    if epoch%5 == 0 :
+    if epoch%5 == 0 and epoch > 30 :
         torch.save(net_G,'model_generator_'+str(epoch)+'.pt')
-        #torch.save(net_D,'model_discriminator_'+str(epoch)+'.pt')
-         
+        np.save('d_real_loss_curve',np.array(d_real_loss_curve))    
+        np.save('d_fake_loss_curve',np.array(d_fake_loss_curve))    
+        np.save('dis_accu_real_curve',np.array(dis_accu_real_curve))    
+        np.save('dis_accu_fake_curve',np.array(dis_accu_fake_curve))    
+'''
+np.random.seed(2)
+model = torch.load('model_generator_90.pt')                                                                                                                             
+final_plot = rand_faces(8,1,model)
+scipy.misc.imsave('fig2_3.jpg', ((final_plot+1)*127.5))
 
 
 

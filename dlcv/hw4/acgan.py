@@ -9,6 +9,7 @@ import argparse
 import torch.optim as optim
 import torchvision
 import random , time , math
+import scipy.misc 
 from tensorboardX import SummaryWriter 
 
 parser =  argparse.ArgumentParser(description='vae model')
@@ -159,10 +160,10 @@ class generator(nn.Module):
  
 net_D = discriminator(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda()
 net_G = generator(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda() 
-print(net_D)
-print('-'*50)
-print(net_G)
-print('-'*50) 
+#print(net_D)
+#print('-'*50)
+#print(net_G)
+#print('-'*50) 
 optimizerD = optim.Adam(net_D.parameters(), lr=0.0001, betas=(0.5, 0.999))
 optimizerG = optim.Adam(net_G.parameters(), lr=0.0001, betas=(0.5, 0.999))
 
@@ -187,7 +188,7 @@ train_label = np.array(train_label)
 #print(train_label) 
 train_label = torch.FloatTensor(train_label)
 #input()
- 
+''' 
 arr = np.load('train.npy')[:args.test_num]
 #print(arr)
 #input()
@@ -197,10 +198,10 @@ arr = torch.FloatTensor(arr)
 dataset = imagedataset(arr,train_label,'train')
 training_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=True)
 
-'''
+
 arr = np.load('test.npy')
-print('loaded testing set')
-print(arr.shape)
+#print('loaded testing set')
+#print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'test')
 testing_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=False)
@@ -216,11 +217,6 @@ def asMinutes(s):
     m = math.floor(s / 60)
     s -= m * 60
     return '%dm %ds' % (m, s)
-
-d_real_label_loss_curve = []
-d_fake_label_loss_curve = []
-d_accu_real_curve = []
-d_accu_fake_curve = []
 
 def train_iter(epoch,D,G,iteration):
     dis_loss = 0
@@ -343,8 +339,8 @@ def train_iter(epoch,D,G,iteration):
         G_train_loss.backward()
         optimizerG.step()
     
-        d_real_label_loss += D_real_loss_label  
-        d_fake_label_loss += D_fake_loss_label 
+        d_real_label_loss += D_real_loss_label.data[0]  
+        d_fake_label_loss += D_fake_loss_label.data[0]
         d_accu_real += float(correct_real) / batch_size 
         d_accu_fake += float(correct_fake) / batch_size
                         
@@ -369,10 +365,6 @@ def train_iter(epoch,D,G,iteration):
         iteration += 1
 
         if batch_idx % 100 == 0:
-            d_real_label_loss_curve.append(d_real_label_loss/100)
-            d_fake_label_loss_curve.append(d_fake_label_loss/100)
-            d_accu_real_curve.append(d_accu_real/100)
-            d_accu_fake_curve.append(d_accu_fake/100)
             writer.add_scalar('d_real_label_loss_curve', d_real_label_loss/100 , iteration)
             writer.add_scalar('d_fake_label_loss_curve', d_fake_label_loss/100 , iteration)
             writer.add_scalar('d_accu_real_curve', d_accu_real/100 , iteration)
@@ -388,9 +380,6 @@ def train_iter(epoch,D,G,iteration):
                 , gen_loss / len(training_set) ))
     return iteration
 
-def gaussian(ins , mean, stddev):
-    noise = Variable(ins.data.new(ins.size()).normal_(mean, stddev))
-    return ins + noise
                                     
 def rand_faces(num,epoch,generator):
     
@@ -430,34 +419,31 @@ def rand_faces(num,epoch,generator):
     fake_second = generator(noise_second).permute(0,3,1,2).data
 
     img_first = torchvision.utils.make_grid(fake_first,nrow=num,normalize=True)
-    writer.add_image(str(epoch)+'_random_sample_a.jpg', img_first , epoch)
+    #writer.add_image(str(epoch)+'_random_sample_a.jpg', img_first , epoch)
     
     img_second = torchvision.utils.make_grid(fake_second,nrow=num,normalize=True)
-    writer.add_image(str(epoch)+'_random_sample_b .jpg', img_second , epoch)
+    #writer.add_image(str(epoch)+'_random_sample_b .jpg', img_second , epoch)
+    plot = torch.cat((fake_first,fake_second),0)
+    plot = torchvision.utils.make_grid(plot,nrow=num,normalize=True)
+    return plot.permute(1,2,0).cpu().numpy()
 
-    '''
-    generator.eval()    
-    #z = torch.randn(num*num, args.latent_size)
-    z = torch.zeros(num,args.latent_size)
-    z = Variable(z, volatile=True)
-    z = gaussian(z,0,1)
-    z = z.cuda() # generator(z) shape (-1,64,64,3)
-    recon = generator(z).permute(0,3,1,2)
-    recon = recon.data 
-    img = torchvision.utils.make_grid(recon,nrow=num,normalize=True)
-    writer.add_image(str(epoch)+'_random_sample.jpg', img , epoch)
-    '''
+'''
 step = 1
 for epoch in range(1,args.epoch+1):
- 
+    np.random.seed(1)
     step = train_iter(epoch,net_D,net_G,(epoch-1)*len(training_set))
 
     rand_faces(10,epoch,net_G)
 
-    if epoch%5 == 0 :
-        torch.save(net_G,'model_acgan_generator_'+str(epoch)+'.pt')
+    if epoch%10 == 0 and epoch > 40:
+        torch.save(net_G,'model/acgan_new/model_acgan_generator_'+str(epoch)+'.pt')
         #torch.save(net_D,'model_acgan_discriminator_'+str(epoch)+'.pt')
-         
+'''
+np.random.seed(5)
+model = torch.load('model_acgan_generator_180.pt')                     
+final_plot = rand_faces(10,1,model)
+scipy.misc.imsave('fig3_3.jpg', ((final_plot+1)*127.5))
+
 
 
 

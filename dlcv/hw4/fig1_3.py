@@ -24,6 +24,7 @@ parser.add_argument('-lam',type=float,dest='lambda_kl',required=True)
 parser.add_argument('-tm',type=int,dest='test_num',required=True)
 parser.add_argument('-exp',type=str,dest='exp',required=True)
 parser.add_argument('-tsne',type=int,dest='tsne',required=True)
+parser.add_argument('-td',type=str,dest='test_data',required=True)
 args = parser.parse_args()
 writer = SummaryWriter('runs/exp_'+args.exp)
 
@@ -49,7 +50,7 @@ def get_data(path,num,name,batch_size,shuffle=False):
     data = data[:num]
     arr = []
     for x in data:
-        print(os.path.join(path,x))
+        #print(os.path.join(path,x))
         #input()
         im = Image.open(os.path.join(path,x))
         im = np.array(im)
@@ -221,6 +222,7 @@ optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 #training_set = get_data('train',num=args.train_num,name='train',batch_size=args.batch_size,shuffle=True)
 #testing_set = get_data('test',num=2621,name='test',batch_size=args.batch_size,shuffle=False)
+testing_set = get_data(args.test_data,num=2621,name='test',batch_size=args.batch_size,shuffle=False)
 #print('saved data ...')
 #input()
 
@@ -234,14 +236,14 @@ arr = torch.FloatTensor(arr)
 dataset = imagedataset(arr,'train')
 training_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=True)
 '''
-
+'''
 arr = np.load('test.npy')
 print('loaded testing set')
 print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'test')
 testing_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=False)
-
+'''
 def timeSince(since, percent):
     now = time.time()
     s = now - since
@@ -365,8 +367,8 @@ def rec_face(num,epoch,model):
     seq = torch.LongTensor(seq)
     z = torch.index_select(testing_set.dataset.img,0,seq)
     img_orig = torchvision.utils.make_grid(z.permute(0,3,1,2),nrow=num,normalize=True)
-    print('img_orig:',img_orig)
-    input()
+    #print('img_orig:',img_orig)
+    #input()
     final_plot = z.permute(0,3,1,2)
     z = Variable(z, volatile=True)
     z = z.cuda()
@@ -375,9 +377,9 @@ def rec_face(num,epoch,model):
     #print('recon:',recon)
     #input()
     recon = recon.data
-    print('final_plot:',final_plot)
-    print('recon:',recon)
-    input()
+    #print('final_plot:',final_plot)
+    #print('recon:',recon)
+    #input()
     final_plot = torch.cat((final_plot,recon.cpu()),0)
     #print('recon:',recon)
     #input()
@@ -396,7 +398,7 @@ for epoch in range(1,args.epoch+1):
     rec_face(10,epoch)
 '''
 np.random.seed(1)
-model = torch.load('model/vae/model_300.pt')
+model = torch.load('model_300.pt')
 final_plot = rec_face(10,1,model)
 #ori = ori.permute(1,2,0)
 #print('ori:',ori.shape)

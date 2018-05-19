@@ -215,8 +215,8 @@ def loss_function(recon_x, x, mu, logvar):
     return MSE + KLD*args.lambda_kl , MSE , KLD 
 
 model = vae(nc=3, ngf=64, ndf=64, latent_size = args.latent_size ).cuda()
-print(model)
-input()
+#print(model)
+#input()
 optimizer = optim.Adam(model.parameters(), lr=1e-4)
 
 #training_set = get_data('train',num=args.train_num,name='train',batch_size=args.batch_size,shuffle=True)
@@ -234,14 +234,14 @@ arr = torch.FloatTensor(arr)
 dataset = imagedataset(arr,'train')
 training_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=True)
 '''
-
+'''
 arr = np.load('test.npy')
-print('loaded testing set')
-print(arr.shape)
+#print('loaded testing set')
+#print(arr.shape)
 arr = torch.FloatTensor(arr)                                                                                                           
 dataset = imagedataset(arr,'test')
 testing_set = DataLoader(dataset,batch_size=args.batch_size,shuffle=False)
-
+'''
 def timeSince(since, percent):
     now = time.time()
     s = now - since
@@ -342,11 +342,11 @@ def gaussian(ins , mean, stddev):
     noise = Variable(ins.data.new(ins.size()).normal_(mean, stddev))
     return ins + noise
                             
-def rand_faces(num,epoch):
+def rand_faces(num,epoch,model):
     model.eval()    
     #z = torch.randn(num*num, args.latent_size)
     #z = torch.zeros(num,args.latent_size)
-    z = np.random.normal(0, 1, (num, args.latent_size))
+    z = np.random.normal(0, 1, (32, args.latent_size))
     z = Variable(torch.FloatTensor(z), volatile=True)
     #z = gaussian(z,0,1)
     z = z.cuda()
@@ -354,10 +354,15 @@ def rand_faces(num,epoch):
     #print('recon:',recon)
     #input()
     recon = recon.data 
+    final_plot = recon
     #print('recon:',recon)
     #input()
-    img = torchvision.utils.make_grid(recon,nrow=num,normalize=True) 
-    writer.add_image(str(epoch)+'_random_sample.jpg', img , epoch)
+    #img = torchvision.utils.make_grid(recon,nrow=num,normalize=True) 
+    #writer.add_image(str(epoch)+'_random_sample.jpg', img , epoch)
+    final_plot = torchvision.utils.make_grid(final_plot,nrow=num,normalize=True) 
+    #print('final_plot:',final_plot)
+    #input()
+    return final_plot.permute(1,2,0).cpu().numpy()
 
 def rec_face(num,epoch,model):
     model.eval()         
@@ -386,16 +391,9 @@ def rec_face(num,epoch,model):
     #writer.add_image(str(epoch)+'_original.jpg', img_orig , epoch)
     #writer.add_image(str(epoch)+'_reconstruct.jpg', img_recon , epoch)
     return final_plot.permute(1,2,0).cpu().numpy() 
+
+np.random.seed(2)
 '''
-iteration = 0
-for epoch in range(1,args.epoch+1):
-    np.random.seed(1)
-    iteration = train(epoch,iteration)
-    test_loss = test(epoch)
-    rand_faces(10,epoch)
-    rec_face(10,epoch)
-'''
-np.random.seed(1)
 model = torch.load('model/vae/model_300.pt')
 final_plot = rec_face(10,1,model)
 #ori = ori.permute(1,2,0)
@@ -404,30 +402,17 @@ final_plot = rec_face(10,1,model)
 #ori_grid= Image.fromarray(((ori+1)*127.5).astype(np.uint8))
 scipy.misc.imsave('fig1_3.jpg', ((final_plot+1)*127.5))
 #ori_grid.save('fig1_3.jpg')
-
-
-
-
-
-
-
-
-
 '''
-    if epoch%5 == 0 :
-        torch.save(model,'model/vae_new/model_'+str(epoch)+'.pt')
-    if epoch%30==1:
-        a = np.array(kld_curve)
-        b = np.array(mse_curve)
-        c = np.array(testing_mse_loss)
-        np.save('kld_curve_'+str(epoch)+'.npy',a)
-        np.save('mse_curve_'+str(epoch)+'.npy',b)
-        np.save('testing_mse_loss_'+str(epoch)+'.npy',c)
+model = torch.load('model_300.pt')
+final_plot = rand_faces(8,1,model)
+#ori = ori.permute(1,2,0)
+#print('ori:',ori.shape)
+#input()
+#ori_grid= Image.fromarray(((ori+1)*127.5).astype(np.uint8))
+scipy.misc.imsave('fig1_4.jpg', ((final_plot+1)*127.5))
 
-kld_curve = np.array(kld_curve)
-mse_curve = np.array(mse_curve)
-testing_mse_loss = np.array(testing_mse_loss)
-'''
+
+
 
 
 
