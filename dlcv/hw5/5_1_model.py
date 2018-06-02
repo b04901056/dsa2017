@@ -10,6 +10,8 @@ import argparse
 import torch.optim as optim
 import torchvision
 import random , time , math
+from sklearn.manifold import TSNE
+from matplotlib import pyplot as plt
 from tensorboardX import SummaryWriter 
 
 parser =  argparse.ArgumentParser(description='5_1 model')
@@ -77,9 +79,9 @@ print('-'*50)
 optimizer = optim.Adam(model.parameters(), lr=0.0001, betas=(0.5, 0.999))
 criterion = torch.nn.CrossEntropyLoss()
 
-training_set = get_data(img='video_data_train.npy',label='video_label_train.npy'\
-                        ,batch_size=args.batch_size,shuffle=True)
-validation_set = get_data(img='video_data_val.npy',label='video_label_val.npy'\
+#training_set = get_data(img='5_1_data/video_data_train.npy',label='5_1_data/video_label_train.npy'\
+                        #,batch_size=args.batch_size,shuffle=True)
+validation_set = get_data(img='5_1_data/video_data_val.npy',label='5_1_data/video_label_val.npy'\
                         ,batch_size=args.batch_size,shuffle=False)
 print('saved data ...')
 print('start training ...')
@@ -194,24 +196,62 @@ def val(epoch,model,iteration):
                 , loss / len(validation_set)
                 , accuracy / len(validation_set) ))
     return iteration
-
+'''
 for i in range(args.epoch):
     epoch = i+1
     train_iter(epoch,model,(epoch-1)*len(training_set))
     val(epoch,model,(epoch-1)*len(validation_set))
     if epoch % 30 == 0:
         torch.save(model,'model/5-1/model_'+str(epoch)+'.pt')
+'''
+ 
 
-# test validation set performance
-
-#model = torch.load('model/5-1/model_990.pt')
-#val(10,model,(10-1)*len(validation_set))
-
+model = torch.load('model/5-1/model_990.pt')
 
 
+# tsne
+tsne_data = []
+valid_y = [] 
+model.eval()
+with torch.no_grad():
+    for step , (batch_x,batch_y) in enumerate(validation_set):
+            batch_idx = step + 1 
+            batch_x = Variable(batch_x.squeeze(1)).cuda() 
+            batch_size = len(batch_x) 
+            
+            label = Variable(batch_y.long(),volatile=True).cuda()  
+            #optimizer.zero_grad()  
+            output = model(batch_x) 
+            tsne_data.append(output.cpu().data)
+            valid_y.append(batch_y)
 
+tsne_data = np.concatenate(tsne_data,axis=0) 
+valid_y = np.concatenate(valid_y,axis=0).astype(int)
+print(tsne_data.shape)
+print(valid_y)
+#input()
+X_embedded = TSNE(n_components=2,n_iter=20000,init='pca').fit_transform(tsne_data)
+print(X_embedded.shape)
+#input()
 
+# plot
+'''
+plt.figure(figsize=(6, 5))
+plt.scatter(X_embedded[:,0], X_embedded[:,1] , c=valid_y , cmap = plt.get_cmap('tab20'))
+plt.show()
+'''
+x=X_embedded[:,0]
+y=X_embedded[:,1]
+classes = valid_y
+unique = list(set(classes))
+colors = [plt.cm.jet(float(i)/max(unique)) for i in unique]
+for i, u in enumerate(unique):
+    xi = [x[j] for j  in range(len(x)) if classes[j] == u]
+    yi = [y[j] for j  in range(len(x)) if classes[j] == u]
+    plt.scatter(xi, yi, c=colors[i], label='label '+str(u))
+#plt.legend(loc=2)
 
+plt.show()
 
 
 
