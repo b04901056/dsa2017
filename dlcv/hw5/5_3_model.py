@@ -10,6 +10,8 @@ import argparse
 import torch.optim as optim
 import torchvision
 import random , time , math  
+import matplotlib.pyplot as plt
+import matplotlib as mpl
 from tensorboardX import SummaryWriter 
 
 parser =  argparse.ArgumentParser(description='5_3 model')
@@ -188,7 +190,8 @@ for epoch in range(10000):
         torch.save(model.state_dict(), 'model/5-3/model_'+str(epoch)+'.pt')
     model.train()
 '''
-
+'''
+## test accuracy 
 feature_size = 1000
 model = GRU(feature_size,hidden_size=512).cuda() 
 model.load_state_dict(torch.load('model/5-3/model_9800.pt')) 
@@ -211,6 +214,84 @@ with torch.no_grad():
         acc += np.mean(same_difference[i])   
     accuracy = acc / 5
     print("validation accuracy: ",accuracy)  
+'''
+select = 4
+feature_size = 1000
+model = GRU(feature_size,hidden_size=512).cuda() 
+model.load_state_dict(torch.load('model/5-3/model_9800.pt')) 
+same_difference = [] 
+with torch.no_grad():
+    model.eval() 
+    input_valid_X, input_valid_y = single_batch_padding( [valid_features[select]]
+                                                        , [valid_y[select]]      
+                                                        , test=True )
+    output = model(input_valid_X.cuda())
+    output_label = torch.argmax(output,1).cpu().data 
+# color bar 
+color = {0:[255,255,255]
+        ,1:[255,0,0]
+        ,2:[0,255,0]
+        ,3:[0,0,255]
+        ,4:[0,255,255]
+        ,5:[255,0,255]
+        ,6:[0,0,0]
+        ,7:[255,255,0]
+        ,8:[128,0,0]
+        ,9:[0,128,0]
+        ,10:[0,0,128]}
+
+start = 690
+end = valid_y[select].shape[0]-1
+fig = plt.figure(figsize=(8, 3)) 
+img = [i for i in range(1,16310,12)]
+img = img[690:]
+a = len(img)/10
+for i in range(10):
+    print(img[int(a*i)],' ',end='')
+
+label = valid_y[select].tolist()
+#print(output_label)
+#input()
+color_list = []
+for i in range(len(label)):
+    color_list.append(color[label[i]])
+color_list = np.array(color_list)[start:end]/255 
+cmap = mpl.colors.ListedColormap(color_list)
+cmap.set_over('0.25')
+cmap.set_under('0.75') 
+bounds = [i for i in range(start,end)] 
+ax1 = fig.add_axes([0.05, 0.775, 0.9, 0.15])
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+cb2 = mpl.colorbar.ColorbarBase(ax=ax1,
+                                cmap=cmap,
+                                norm=norm, 
+                                boundaries=bounds, 
+                                spacing='proportional',
+                                orientation='horizontal')
+
+output_label = output_label.numpy().astype(int).tolist() 
+color_list = []
+for i in range(len(output_label)):
+    color_list.append(color[output_label[i]])
+color_list = np.array(color_list)[start:end]/255
+#for i in range(color_list.shape[0]):
+    #print(color_list[i])
+#input()
+cmap = mpl.colors.ListedColormap(color_list)
+cmap.set_over('0.25')
+cmap.set_under('0.75') 
+bounds = [i for i in range(start,end)]
+#bounds = [1, 2, 4, 7, 8,9]
+ax2 = fig.add_axes([0.05, 0.15, 0.9, 0.15])
+norm = mpl.colors.BoundaryNorm(bounds, cmap.N)
+cb2 = mpl.colorbar.ColorbarBase(ax=ax2,
+                                cmap=cmap,
+                                norm=norm, 
+                                boundaries=bounds, 
+                                spacing='proportional',
+                                orientation='horizontal')
+plt.show()
+
 
 
 
