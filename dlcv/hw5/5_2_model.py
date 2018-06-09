@@ -3,7 +3,7 @@ import numpy as np
 import torch
 from PIL import Image
 from torch.utils.data import Dataset,DataLoader
-import os
+import os 
 from torch.autograd import Variable
 import torch.nn as nn
 import argparse 
@@ -29,11 +29,11 @@ class GRU (nn.Module):
         self.lstm = nn.LSTM(input_size, self.hidden_size, n_layers,
                           dropout=(0 if n_layers == 1 else dropout), bidirectional=False)
         self.bn_0 = nn.BatchNorm1d(self.hidden_size)
-        self.fc_1 = nn.Linear(self.hidden_size, int(self.hidden_size/2))
-        self.bn_1 = nn.BatchNorm1d(int(self.hidden_size/2))
+        #self.fc_1 = nn.Linear(self.hidden_size, int(self.hidden_size/2))
+        #self.bn_1 = nn.BatchNorm1d(int(self.hidden_size/2))
         self.fc_2 = nn.Linear(int(self.hidden_size), 11)
         self.softmax = nn.Softmax(1)
-        self.relu = nn.ReLU()
+        #self.relu = nn.ReLU()
     def forward(self, padded_sequence, input_lengths, hidden=None):
         self.lstm.flatten_parameters() 
         packed = torch.nn.utils.rnn.pack_padded_sequence(padded_sequence, input_lengths)
@@ -42,6 +42,9 @@ class GRU (nn.Module):
         outputs = self.softmax(self.fc_2(outputs))
         return outputs
 
+feature_size = 1000
+model = rnn = GRU(feature_size,hidden_size=512).cuda()
+print(model)
 #train_features = np.load('5_1_data/video_data_train.npy')
 valid_features = np.load('5_1_data/video_data_val.npy')
 #train_y = np.load('5_1_data/video_label_train.npy')
@@ -76,8 +79,7 @@ def single_batch_padding(train_X_batch, train_y_batch, test = False):
     return padded_sequence, label, length
 
 
-feature_size = 1000
-model = rnn = GRU(feature_size,hidden_size=512).cuda()
+ 
 model.load_state_dict(torch.load('model/5-2/model_40.pt'))
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 BATCH_SIZE = 16
