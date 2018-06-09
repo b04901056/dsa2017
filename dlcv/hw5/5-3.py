@@ -15,9 +15,9 @@ from sklearn.manifold import TSNE
 import sys
 from torchvision import models
 from matplotlib import pyplot as plt 
-'''
+
 video_path_val = sys.argv[1]
-label_path_val = sys.argv[2]
+label_path_val = sys.argv[3]
 
 model = models.vgg16(pretrained=True)
 model.eval()
@@ -89,7 +89,7 @@ for x in label_path:
 
 video_data = np.array(video_data)
 label_data = np.array(label_data) 
-'''
+
 
 class GRU (nn.Module):
     def  __init__(self, input_size, hidden_size=512, n_layers=2, dropout=0.5):
@@ -155,10 +155,10 @@ def single_batch_padding(train_X_batch, train_y_batch, test = False):
 
 feature_size = 1000
 model = GRU(feature_size,hidden_size=512).cuda() 
-model.load_state_dict(torch.load('model/5-3/model_9800.pt')) 
+model.load_state_dict(torch.load('model/5-3_new/model_100.pt')) 
  
 model.eval() 
- 
+path = sys.argv[2]
 for i in range(len(valid_y)):
     number = 0
     answer = [] 
@@ -173,7 +173,7 @@ for i in range(len(valid_y)):
 
     answer = np.concatenate(answer,axis=0).reshape(-1)
     #print(answer.shape)
-    with open('p3_valid_'+str(i)+'.txt','w') as f:
+    with open(path+'/p3_valid_'+str(i)+'.txt','w') as f:
         for x in range(number):
             f.write(str(answer[x]))
             f.write('\n')

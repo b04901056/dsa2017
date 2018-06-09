@@ -15,7 +15,7 @@ from sklearn.manifold import TSNE
 import sys
 from torchvision import models
 from matplotlib import pyplot as plt 
-'''
+
 video_path_val = sys.argv[1]
 
 data = reader.getVideoList(sys.argv[2])
@@ -83,7 +83,7 @@ for cat in video_path:
 video_data = np.array(video_data)
 video_label = np.array(video_label).astype(int) 
  
-'''
+
 class GRU (nn.Module):
     def  __init__(self, input_size, hidden_size=512, n_layers=2, dropout=0.5):
         super(GRU, self).__init__()
@@ -148,9 +148,10 @@ with torch.no_grad():
         output = model(input_valid_X.cuda(),valid_lengths)
         output_label = torch.argmax(output,1).cpu().data  
         answer.append(output_label)
+path = sys.argv[3]
 
 answer = np.concatenate(answer,axis=0).reshape(-1) 
-with open('p2_valid.txt','w') as f:
+with open(path+'/p2_valid.txt','w') as f:
     for i in range(517):
         f.write(str(answer[i]))
         f.write('\n')

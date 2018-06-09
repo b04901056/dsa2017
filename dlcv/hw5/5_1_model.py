@@ -209,6 +209,7 @@ for i in range(args.epoch):
 model = torch.load('model/5-1/model_990.pt')
 
 
+'''
 # tsne
 tsne_data = []
 valid_y = [] 
@@ -233,13 +234,14 @@ print(valid_y)
 X_embedded = TSNE(n_components=2,n_iter=20000,init='pca').fit_transform(tsne_data)
 print(X_embedded.shape)
 #input()
+'''
 
 # plot
 '''
 plt.figure(figsize=(6, 5))
 plt.scatter(X_embedded[:,0], X_embedded[:,1] , c=valid_y , cmap = plt.get_cmap('tab20'))
 plt.show()
-'''
+
 x=X_embedded[:,0]
 y=X_embedded[:,1]
 classes = valid_y
@@ -252,7 +254,7 @@ for i, u in enumerate(unique):
 #plt.legend(loc=2)
 
 plt.show()
-
+'''
 
 
 

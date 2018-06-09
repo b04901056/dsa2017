@@ -16,7 +16,7 @@ import random , time , math
 from sklearn.manifold import TSNE
 from matplotlib import pyplot as plt 
 
-'''
+
 video_path_val = sys.argv[1]
 
 data = reader.getVideoList(sys.argv[2])
@@ -83,7 +83,7 @@ for cat in video_path:
             
 video_data = np.array(video_data)
 video_label = np.array(video_label).astype(int)
-'''
+
 video_data = np.load('5_1_data/video_data_val.npy') 
 video_label = np.load('5_1_data/video_label_val.npy')
 
@@ -147,6 +147,7 @@ validation_set = get_data(batch_size=16,shuffle=False)
 model = torch.load('model/5-1/model_990.pt')
 model.eval()
 answer = []
+path = sys.argv[3]
 with torch.no_grad():
     for step , (batch_x,batch_y) in enumerate(validation_set):
         batch_idx = step + 1 
@@ -162,7 +163,7 @@ with torch.no_grad():
 
 answer = np.concatenate(answer,axis=0).reshape(-1,1)
 print(answer.shape)
-with open('p1_valid.txt','w') as f:
+with open(path+'/p1_valid.txt','w') as f:
     for i in range(517):
         f.write(str(answer[i][0]))
         f.write('\n')

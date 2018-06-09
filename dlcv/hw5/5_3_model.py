@@ -22,9 +22,9 @@ parser.add_argument('-exp',type=str,dest='exp',required=True)
 args = parser.parse_args()
 writer = SummaryWriter('runs/exp_'+args.exp)
 
-class GRU (nn.Module):
+class RNN (nn.Module):
     def  __init__(self, input_size, hidden_size=512, n_layers=2, dropout=0.5):
-        super(GRU, self).__init__()
+        super(RNN, self).__init__()
         self.hidden_size =  hidden_size
         self.lstm = nn.LSTM(input_size, self.hidden_size, n_layers,
                           dropout=(0 if n_layers == 1 else dropout), bidirectional=False)
@@ -36,21 +36,22 @@ class GRU (nn.Module):
         self.relu = nn.ReLU()
     def forward(self, sequence, hidden=None):
         #packed = torch.nn.utils.rnn.pack_padded_sequence(padded_sequence, input_lengths)
-        self.lstm.flatten_parameters() 
+        #self.lstm.flatten_parameters() 
         outputs, (hn,cn) = self.lstm(sequence, hidden)  
         #print(outputs.size())
-        #input()
         output = []
         for i in range(sequence.size()[0]):
-            x = self.bn_0(outputs[i])
+            #x = self.bn_0(outputs[i])
+            x = outputs[i]
+            #x = self.fc_1(x)
             x = self.softmax(self.fc_2(x)) #(batch_size,11)
             output.append(x)
         output = torch.cat(output,0) 
         return output
 
-#train_features = np.load('5_3_data/video_data_train.npy')
+train_features = np.load('5_3_data/video_data_train.npy')
 valid_features = np.load('5_3_data/video_data_val.npy')
-#train_y = np.load('5_3_data/label_data_train.npy')
+train_y = np.load('5_3_data/label_data_train.npy')
 valid_y = np.load('5_3_data/label_data_val.npy')
 #print('train_features:',train_features)
 #input()
@@ -64,7 +65,7 @@ valid_y = np.load('5_3_data/label_data_val.npy')
 #input()
 
 
-max_step = 400
+max_step = 512
 def single_batch_padding(train_X_batch, train_y_batch, test = False):
     if test == True:
         train_X = torch.FloatTensor(np.array(train_X_batch)) 
@@ -95,12 +96,11 @@ def single_batch_padding(train_X_batch, train_y_batch, test = False):
         label = torch.LongTensor(np.array(train_Y))
     return train_X, label 
 
-'''
+
 feature_size = 1000
-model = GRU(feature_size,hidden_size=512).cuda()
+model = RNN(feature_size,hidden_size=512).cuda()
 model.load_state_dict(torch.load('model/5-2/model_40.pt'))
 print(model)
-input()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 BATCH_SIZE = 8
 loss_function = nn.CrossEntropyLoss()
@@ -109,13 +109,13 @@ max_accuracy = 0
 model.train()
 iteration_loss = 0
 iteration_accu = 0
-for epoch in range(10000):
+for epoch in range(5000):
     
     print("\nEpoch:", epoch+1)
     #start = time.time()
     CE_loss = 0.0
     total_length = len(train_features)
-    #print('total_length = ',total_length)
+    #print('total_length = ',total_length) 
     #input()
     # shuffle
     perm_index = np.random.permutation(len(train_features))
@@ -156,6 +156,7 @@ for epoch in range(10000):
             #loss = loss_function(output[i], input_y[i].cuda())
             #loss.backward(retain_graph=True)
             total_loss += loss
+        total_loss /= input_X.size()[0]
         total_loss.backward()
         writer.add_scalar('CrossEntropyLoss', total_loss.item() , iteration_loss)
         iteration_loss += 1 
@@ -168,28 +169,46 @@ for epoch in range(10000):
     
     with torch.no_grad():
         model.eval()
+        label = []
+        target = []
         for i in range(len(valid_y)):
             input_valid_X, input_valid_y = single_batch_padding( [valid_features[i]]
                                                                 , [valid_y[i]]      
                                                                 , test=True )
             output = model(input_valid_X.cuda())
             output_label = torch.argmax(output,1).cpu().data 
-            #print('output_label',output_label)
-            #print('input_valid_y',input_valid_y)
+            output_label = output_label.view(output_label.size()[0],1)
+            input_valid_y = input_valid_y.permute(1,0)
+            #print('output_label',output_label.size())
+            #print('input_valid_y',input_valid_y.size())
             #input()
-            same_difference.append((output_label == input_valid_y).numpy()) 
+            ac = (output_label == input_valid_y).numpy()
+            print(np.mean(ac))
+            label.append(output_label)
+            target.append(input_valid_y)
+        '''
         acc = 0
         for i in range(5):
             acc += np.mean(same_difference[i])   
         accuracy = acc / 5
+        '''
+        label = torch.cat(label,0).numpy()
+        target = torch.cat(target,0).numpy()
+        #print(len(label))
+        #print(len(target))
+        #input()
+        accuracy = (label == target)
+        #print(accuracy)
+        #input()
+        accuracy = np.mean(accuracy)
         print("validation accuracy: ",accuracy)
         writer.add_scalar('Accuracy', accuracy , iteration_accu)
         iteration_accu += 1
 
-    if epoch % 100 == 0 :
-        torch.save(model.state_dict(), 'model/5-3/model_'+str(epoch)+'.pt')
+    if epoch % 50 == 0 :
+        torch.save(model.state_dict(), 'model/5-3_new/model_'+str(epoch)+'.pt')
     model.train()
-'''
+
 '''
 ## test accuracy 
 feature_size = 1000
@@ -214,6 +233,7 @@ with torch.no_grad():
         acc += np.mean(same_difference[i])   
     accuracy = acc / 5
     print("validation accuracy: ",accuracy)  
+'''
 '''
 select = 4
 feature_size = 1000
@@ -291,7 +311,7 @@ cb2 = mpl.colorbar.ColorbarBase(ax=ax2,
                                 spacing='proportional',
                                 orientation='horizontal')
 plt.show()
-
+'''
 
 
 
