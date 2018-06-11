@@ -29,11 +29,11 @@ class GRU (nn.Module):
         self.lstm = nn.LSTM(input_size, self.hidden_size, n_layers,
                           dropout=(0 if n_layers == 1 else dropout), bidirectional=False)
         self.bn_0 = nn.BatchNorm1d(self.hidden_size)
-        #self.fc_1 = nn.Linear(self.hidden_size, int(self.hidden_size/2))
-        #self.bn_1 = nn.BatchNorm1d(int(self.hidden_size/2))
+        self.fc_1 = nn.Linear(self.hidden_size, int(self.hidden_size/2))
+        self.bn_1 = nn.BatchNorm1d(int(self.hidden_size/2))
         self.fc_2 = nn.Linear(int(self.hidden_size), 11)
         self.softmax = nn.Softmax(1)
-        #self.relu = nn.ReLU()
+        self.relu = nn.ReLU()
     def forward(self, padded_sequence, input_lengths, hidden=None):
         self.lstm.flatten_parameters() 
         packed = torch.nn.utils.rnn.pack_padded_sequence(padded_sequence, input_lengths)

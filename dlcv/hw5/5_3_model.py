@@ -28,12 +28,12 @@ class RNN (nn.Module):
         self.hidden_size =  hidden_size
         self.lstm = nn.LSTM(input_size, self.hidden_size, n_layers,
                           dropout=(0 if n_layers == 1 else dropout), bidirectional=False)
-        self.bn_0 = nn.BatchNorm1d(self.hidden_size)
-        self.fc_1 = nn.Linear(self.hidden_size, int(self.hidden_size/2))
-        self.bn_1 = nn.BatchNorm1d(int(self.hidden_size/2))
+        #self.bn_0 = nn.BatchNorm1d(self.hidden_size)
+        #self.fc_1 = nn.Linear(self.hidden_size, int(self.hidden_size/2))
+        #self.bn_1 = nn.BatchNorm1d(int(self.hidden_size/2))
         self.fc_2 = nn.Linear(int(self.hidden_size), 11)
         self.softmax = nn.Softmax(1)
-        self.relu = nn.ReLU()
+        #self.relu = nn.ReLU()
     def forward(self, sequence, hidden=None):
         #packed = torch.nn.utils.rnn.pack_padded_sequence(padded_sequence, input_lengths)
         #self.lstm.flatten_parameters() 
@@ -48,10 +48,13 @@ class RNN (nn.Module):
             output.append(x)
         output = torch.cat(output,0) 
         return output
+feature_size = 1000
+model = RNN(feature_size,hidden_size=512).cuda()
+print(model)
 
-train_features = np.load('5_3_data/video_data_train.npy')
+#train_features = np.load('5_3_data/video_data_train.npy')
 valid_features = np.load('5_3_data/video_data_val.npy')
-train_y = np.load('5_3_data/label_data_train.npy')
+#train_y = np.load('5_3_data/label_data_train.npy')
 valid_y = np.load('5_3_data/label_data_val.npy')
 #print('train_features:',train_features)
 #input()
