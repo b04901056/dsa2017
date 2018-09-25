@@ -7,30 +7,43 @@
 #include <cstring>
 #include <cmath> 
 #include <climits>
+#include <set>
+#include <queue>
+#include <iomanip>
 using namespace std;
  
 class node{
 public:
-	node(){ 
+	node(){  
 	}
 	node(int x , int y){
 		pos[0] = x;
-		pos[1] = y;
+		pos[1] = y; 
+		parent = NULL; 
 	}
 	int operator[](int x){
 		return pos[x];
 	}
 	bool operator==(const node& x){
 		return ((pos[0]==x.pos[0])&&(pos[1]==x.pos[1]));
-	}
+	}  
 	int manhattan_distance(const node& x){
-		return abs(pos[0]-x.pos[0]) + abs(pos[1]-x.pos[1]);
+		return abs(pos[0]-x.pos[0]) + abs(pos[1]-x.pos[1]); 
+	}
+	void set_f_cost(){
+		f_cost = g_cost + h_cost;
+	}
+	void set_position(int x , int y){
+		pos[0] = x;
+		pos[1] = y; 
 	}
 	friend ostream& operator<<(ostream& out, const node& n) {
-  		out << "(" << n.pos[0] << " , " << n.pos[1] << " ) "<<endl;;
+  		out << "(" << n.pos[0] << " , " << n.pos[1] << " ) ";
 		return out;
 	}
 	int pos[2];
+	int g_cost , h_cost , f_cost;
+	node* parent;
 };
 
 class wire{
@@ -76,6 +89,13 @@ public:
 	node bottom_left , top_right; 
 };
  
+struct CmpNodePtrs
+{
+    bool operator()(const node* lhs, const node* rhs) const
+    {
+        return lhs->f_cost > rhs->f_cost;
+    }
+};
 
 class router{
 public:
@@ -102,7 +122,7 @@ public:
 	        pch = strtok(line,delim);
 		    while (pch != NULL)
 		    {
-		      printf ("%s\n",pch);
+		      //printf ("%s\n",pch);
 		      buffer.push_back(pch);
 		      pch = strtok (NULL, delim);
 		      //printf ("%s\n",pch);
@@ -147,64 +167,133 @@ public:
 	    return true;
  	}
 
- 	void routing(){
- 		for(int i=0;i<net_list.size();i++){
- 			char hold;
- 			node current_node , candidate_node , best_node , source_node = net_list[i].source , target_node = net_list[i].target; 
- 			vector<node> selected_node;
- 			int cost_value = INT_MAX , g_value = 0 , h_value = 0; 
- 			current_node = source_node;
- 			while(!(current_node == target_node)){
- 				cost_value = INT_MAX;
- 				for(int j=-1;j<=1;j++){
- 					for(int k=-1;k<=1;k++){
- 						if((j==0 && k==0) || (j * k) != 0 || (current_node[0] + j) < 0 || (current_node[0] + j) > x_max || (current_node[1] + k) < 0 || (current_node[1] + k) > y_max) continue; 
- 						candidate_node = node(current_node[0] + j , current_node[1] + k);
- 						cout<<"candidate_node : "<<candidate_node<<endl;
- 						cout<<"target_node : "<<target_node<<endl;
- 						if(candidate_node == target_node) cost_value = 0;  
- 						if(is_empty[current_node[0] + j][current_node[1] + k] != 0 ) continue; 
- 						cout<<"candidate_node : "<<candidate_node<<endl;
- 						g_value = source_node.manhattan_distance(candidate_node);
- 						h_value = candidate_node.manhattan_distance(target_node);
- 						if((g_value + h_value) < cost_value){
- 							best_node = candidate_node;
- 							cost_value = g_value + h_value;
- 						}
- 					}
- 				}
- 				cout<<best_node<<endl;
- 				selected_node.push_back(current_node); 
- 				if(cost_value == 0 ){
- 					selected_node.push_back(target_node);
- 					net_list[i].node_path = selected_node;
- 					break;
- 				}
- 				else if(cost_value == INT_MAX) break;
-				current_node = best_node;
-				if(is_empty[best_node[0]][best_node[1]] == 0){
-					is_empty[best_node[0]][best_node[1]] = 3;
+ 	void routing(){ // 0:empty 1:obstacle 2:pin 3:wire
+ 		char aaa; 
+ 		for(int h=0;h<net_list.size();h++){  
+
+ 			cout<<"routing net "<<net_list[h].name<<endl;
+
+			node source_node = net_list[h].source , target_node = net_list[h].target; 
+			priority_queue< node*, vector<node*>, CmpNodePtrs > open;  
+			
+			// Save the closed_set
+			node*** closed_set;
+			closed_set = new node** [x_max+1];
+	    	for(int i=0;i<=x_max;i++){
+	    		closed_set[i] = new node*[y_max+1];
+	    	} 
+	    	for(int i=y_max;i>=0;i--){
+	    		for(int j=0;j<=x_max;j++){
+	    			closed_set[j][i] = NULL;
+	    		}
+	    	} 
+
+			// Record the best distance to a node
+			int** shortest_value;
+			shortest_value = new int* [x_max+1];
+	    	for(int i=0;i<=x_max;i++){
+	    		shortest_value[i] = new int[y_max+1];
+	    	} 
+	    	for(int i=y_max;i>=0;i--){
+	    		for(int j=0;j<=x_max;j++){
+	    			shortest_value[j][i] = INT_MAX;
+	    		}
+	    	}   
+
+			// Initialization
+			node* init_node = new node;
+			*init_node =source_node; 
+			init_node->g_cost = 0;
+			init_node->h_cost = init_node->manhattan_distance(target_node); 
+			init_node->set_f_cost();
+
+			is_empty[source_node[0]][source_node[1]] = 0; 
+			is_empty[target_node[0]][target_node[1]] = 0; 
+
+			//closed_set[init_node->pos[0]][init_node->pos[1]] = init_node;
+			shortest_value[init_node->pos[0]][init_node->pos[1]] = init_node->f_cost;
+			open.push(init_node); 
+
+			// Searching
+			while(!open.empty()){  
+				node* current = new node; 
+				while(true){
+					current = open.top();
+					open.pop();	 
+					if(closed_set[current->pos[0]][current->pos[1]] != NULL) continue;
+					if(current->f_cost <= shortest_value[current->pos[0]][current->pos[1]]) break;
 				} 
- 				cout<<"================="<<endl;
- 				for(int j=y_max;j>=0;j--){
-				    for(int k=0;k<=x_max;k++){
-				    	cout<<is_empty[k][j]<<" ";
+				cout<<"Move node "<<(*current)<<" to the closed_set"<<endl;
+				closed_set[current->pos[0]][current->pos[1]] = current;  
+
+				// Termination
+				if(*current == target_node){
+					cout<<"finish routing !"<<endl;
+					node* output = current;
+					cout<<(*output)<<endl; 
+					while(output->parent!=NULL){
+						cout<<*(output->parent)<<endl; 
+						output = output->parent;
+						is_empty[output->pos[0]][output->pos[1]] = 3; 
+					}
+					is_empty[source_node[0]][source_node[1]] = 2; 
+					is_empty[target_node[0]][target_node[1]] = 2; 
+					break;
+				}
+
+				// Go through neighbors
+				for(int j=-1;j<=1;j++){
+					for(int k=-1;k<=1;k++){ 
+						cout<<"searching neighbors"<<"j="<<j<<" k="<<k<<endl;
+						// If candidate is not traversable or in closed_set => skip 
+						if((j==0 && k==0) || (j*k)!=0) continue; 
+						if((current->pos[0]+j < 0 ) || (current->pos[0]+j > x_max ) || (current->pos[1]+k < 0)|| (current->pos[1]+k > y_max)) continue;
+						node* candidate = new node(current->pos[0]+j , current->pos[1]+k);  
+						candidate->g_cost = current->g_cost + 1 ;
+						candidate->h_cost = candidate->manhattan_distance(target_node);
+						candidate->set_f_cost(); 
+
+						if(closed_set[candidate->pos[0]][candidate->pos[1]] != NULL) continue;
+						if(is_empty[candidate->pos[0]][candidate->pos[1]] != 0 ) continue;
+
+						// If new path to the candidate is shorter or candidate not in open set => update
+						candidate->parent = current; 
+						open.push(candidate);
+						cout<<"Move node "<<(*candidate)<<" to the open_set "<<"f_cost = "<<candidate->f_cost<<endl;
+						if(candidate->f_cost < shortest_value[candidate->pos[0]][candidate->pos[1]]){
+							shortest_value[candidate->pos[0]][candidate->pos[1]] = candidate->f_cost;
+						}
+					}
+				}  
+				cout<<"===================="<<endl;
+				for(int i=y_max;i>=0;i--){
+				    for(int j=0;j<=x_max;j++){
+				    	if(is_empty[j][i]!=0){
+				    		cout<<setw(10)<<is_empty[j][i]<<" ";
+				    	}
+				    	else{
+				    		cout<<setw(10)<<shortest_value[j][i]<<" ";
+				    	}
 				    }
 				    cout<<endl;
-				} 
-				cin>>hold;
- 			}
- 		}
+				}
+				cout<<"===================="<<endl;
+			}
+ 		} 
  	}
 };
 
 int main(){
 	router astar;
 	astar.read("test_data.txt"); 
-	node a(10,3) , b(1,2);
+	//node a(1,1) , b(2,2) , c(4,4);
 	//cout<<(a==b)<<endl; 
 	//cout<<a.manhattan_distance(b)<<endl;
-	//cout<<a<<endl;
+	//cout<<a<<endl; 
+	/*b.set_cost(&a,&c); 
+	cout<<b.g_cost<<endl;
+	cout<<b.h_cost<<endl;
+	cout<<b.f_cost<<endl; */
 	astar.routing();
 	cout<<endl;
 	for(int i=0;i<astar.net_list.size();i++){
@@ -215,3 +304,4 @@ int main(){
 	}
 
 }
+ 
