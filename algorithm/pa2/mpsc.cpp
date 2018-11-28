@@ -48,10 +48,12 @@ public:
 		back_tracing_first = NULL;
 		back_tracing_second = NULL;
 		present = make_pair(-1,-1);
+		cardinality = 0;
 	}
 	mis* back_tracing_first;
 	mis* back_tracing_second;
 	node_pair present;
+	int cardinality;
 };
 
 mis*** mpsc_table; 
@@ -96,56 +98,81 @@ int main(int argc, char** argv){
 
 	for(int i=0;i<node_number;i++){
 		for(int j=0;j<node_number;j++){
-			if(i<=j) mpsc_table[i][j] = new mis();
+			if(i <= j) mpsc_table[i][j] = new mis();
 			else mpsc_table[i][j] = NULL;
 		}
 	}
-
-	//cout<<"("<<mpsc_table[0][0]->present.first<<","<<mpsc_table[0][0]->present.second<<")"<<endl;  
+   
 	
 	// Dynamic Programming
-	for(int l=1;l<=node_number;l++){
-		for(int i=0;i<=(node_number-l);i++){
-			int j = i + l - 1;
-			if(i==j) continue;
-			else{
-				int k = pair_table[j];
-				if(k==i){ 								//case 3
-					mpsc_table[i][j]->present = make_pair(i,j); 
-					if( (i+1<node_number) && (j-1>=0)){
-						if(mpsc_table[i+1][j-1]) mpsc_table[i][j]->back_tracing_first = mpsc_table[i+1][j-1];
+	for(int j = 0 ;j < node_number;j++){
+		for(int i = 0 ; i <= (j - 1);i++){ 
+			int k = pair_table[j]; 
+
+			if(k==i){ 								//case 3
+				if( k + 1 <= j - 1 ){
+					if(mpsc_table[k+1][j-1]->cardinality + 1 > mpsc_table[i][j-1]->cardinality){
+						mpsc_table[i][j]->present = make_pair(i,j);  
+						mpsc_table[i][j]->back_tracing_first = mpsc_table[i+1][j-1]; 
+						mpsc_table[i][j]->cardinality = mpsc_table[i+1][j-1]->cardinality + 1;
 					}
+					else{
+						mpsc_table[i][j]->back_tracing_first = mpsc_table[i][j-1];
+						mpsc_table[i][j]->cardinality = mpsc_table[i][j-1]->cardinality;
+					} 
+				}
+				else if( k + 1 == j ){ 
+					mpsc_table[i][j]->present = make_pair(i,j);   
+					mpsc_table[i][j]->cardinality = 1; 
+				}
+				else{
+					mpsc_table[i][j]->back_tracing_first = mpsc_table[i][j-1];
+					mpsc_table[i][j]->cardinality = mpsc_table[i][j-1]->cardinality;
 				} 
-				else if( (k>i) && (k<j)){	//case 2
+			} 
+			else if( (k>i) && (k<j)){				//case 2
+				if( k + 1 <= j - 1){
+					if(mpsc_table[i][k-1]->cardinality + 1 + mpsc_table[k+1][j-1]->cardinality > mpsc_table[i][j-1]->cardinality){
+						mpsc_table[i][j]->present = make_pair(k,j); 
+						mpsc_table[i][j]->back_tracing_first = mpsc_table[i][k-1];
+						mpsc_table[i][j]->back_tracing_second = mpsc_table[k+1][j-1];
+						mpsc_table[i][j]->cardinality = mpsc_table[i][k-1]->cardinality + 1 + mpsc_table[k+1][j-1]->cardinality;
+					}
+					else{
+						mpsc_table[i][j]->back_tracing_first = mpsc_table[i][j-1];
+						mpsc_table[i][j]->cardinality = mpsc_table[i][j-1]->cardinality;
+					}
+				}
+				else if(mpsc_table[i][k-1]->cardinality + 1 > mpsc_table[i][j-1]->cardinality){
 					mpsc_table[i][j]->present = make_pair(k,j); 
-					if( (i<node_number) && (k-1>=0)){
-						if(mpsc_table[i][k-1]) mpsc_table[i][j]->back_tracing_first = mpsc_table[i][k-1];
-					}
-					if( (k+1<node_number) && (j-1>=0)){
-						if(mpsc_table[k+1][j-1]) mpsc_table[i][j]->back_tracing_second = mpsc_table[k+1][j-1];
-					}
+					mpsc_table[i][j]->back_tracing_first = mpsc_table[i][k-1]; 
+					mpsc_table[i][j]->cardinality = mpsc_table[i][k-1]->cardinality + 1;
 				}
-				else{												//case 1
-					if( (i<node_number) && (j-1>=0)){
-						if(mpsc_table[i][j-1]) mpsc_table[i][j]->back_tracing_first = mpsc_table[i][j-1];
-					}
+				else{
+					mpsc_table[i][j]->back_tracing_first = mpsc_table[i][j-1];
+					mpsc_table[i][j]->cardinality = mpsc_table[i][j-1]->cardinality;
 				}
-			}  
+			}
+			else{									//case 1
+				mpsc_table[i][j]->back_tracing_first = mpsc_table[i][j-1];
+				mpsc_table[i][j]->cardinality = mpsc_table[i][j-1]->cardinality;
+			} 
 		}
 	}
 	 
 	// Show result
 	cout<<"------------------"<<endl;
+
 	mis* x = mpsc_table[0][node_number-1]; 
-
 	vector<node_pair>* record = new vector<node_pair>; 
-
-	for(int i=0;i<(*record).size();i++){
-		cout<<"("<<(*record)[i].first<<","<<(*record)[i].second<<")"<<endl;
-	}
+ 
 
 	back_track(x,record);
+	for(int i=0;i<(*record).size();i++){
+		if((*record)[i].first != -1) cout<<"("<<(*record)[i].first<<","<<(*record)[i].second<<")"<<endl;
+	}
 	QuickSort(record, 0, record->size()-1);
+	
 
 	int valid = 0;
 	for(int i=0;i<record->size();i++){
