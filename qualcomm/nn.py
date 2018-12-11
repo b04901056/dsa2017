@@ -21,7 +21,7 @@ class Datamanager():
         self.down_sample = False            ## Determine whether delete the negative (attribute #4 = 1) samples
         self.down_sample_rate = 2           ## Make number of negative samples = down_sample_rate * Number of positive samples
  
-        self.smote = True                   ## Determine whether use SMOTE to generate minor class samples
+        self.smote = True                   ## Determine whether use SMOTE to generate minor class samples    source: https://imbalanced-learn.org/en/stable/generated/imblearn.over_sampling.SMOTE.html
 
         self.weighted_loss = True           ## Determine whether adjust the weight of BCE loss function
         self.weighted_loss_rate = 0.1       ## Weight of negative samples in loss function ( 1 - weighted_loss_rate for positive samples)
@@ -55,7 +55,7 @@ class Datamanager():
  
             for i in range(data.shape[1]):           
                 if i == 3 : 
-                    for j in range(data.shape[0]):                                              ## Transform label '2' to 1(positive), '1' to 0(negative) 
+                    for j in range(data.shape[0]):                                              ## Transform label of attribute #4 '2' to 1(positive), '1' to 0(negative) 
                         if data[j][i] == '1':
                             data[j][i] = 0
                         elif data[j][i] == '2':
@@ -138,11 +138,11 @@ class Datamanager():
                                 count_0 = count_0 + 1
                             else:
                                 count_1 = count_1 + 1 
-                        print('count_0:',count_0)
-                        print('count_1:',count_1)
+                        #print('count_0:',count_0)
+                        #print('count_1:',count_1)
 
-                print(X.shape)
-                print(Y.shape) 
+                #print(X.shape)
+                #print(Y.shape) 
 
                 X,Y = torch.from_numpy(X).cuda(),torch.from_numpy(Y).cuda()                                         ## Convert numpy array to tensor for Pytorch
                 train_dataset = Data.TensorDataset(data_tensor=X[:], target_tensor=Y[:])                            ## Wrap up the input/target tensor into TensorDataset   source: https://pytorch.org/docs/stable/data.html

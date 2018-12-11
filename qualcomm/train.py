@@ -27,10 +27,8 @@ dnn = DNN(args).double().cuda()												## Set up DNN and put it on GPU using
 print(dnn) 																	## Print DNN model structure
  
 for epoch in range(1,EPOCH + 1):											## Training and testing
-	loss = dm.train(dnn,dm.dataset['train'],epoch) 
-
+	loss = dm.train(dnn,dm.dataset['train'],epoch)
 	loss = dm.val(dnn,'Val',dm.dataset['val']) 
-
 	loss = dm.val(dnn,'Test',dm.dataset['test']) 
 
 	print('-'*50) 
