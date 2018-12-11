@@ -1,10 +1,11 @@
 import numpy as np 
 import csv , sys
 from sklearn.svm import SVC
+from sklearn.decomposition import PCA       ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html 
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
 
-weight_positive = 0.9935                    ## Make SVM cost-sensitive
+weight_positive = 0.99425                    ## Make SVM cost-sensitive
 normalize = {}                              ## Record the mean and standard deviation for testing set normalization
 clf = SVC(gamma='auto',class_weight = {0 : 1 - weight_positive , 1 : weight_positive})  ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
 
@@ -17,6 +18,13 @@ with open(sys.argv[1],newline='') as csvfile:
     
     data = np.array(data)
     data = np.delete(data,2,0)       		## Missing data => remove
+    
+    data = np.delete(data,0,0)              ## Positive(attribute #4 = 2) outlier => remove   
+    data = np.delete(data,4,0) 
+    data = np.delete(data,5,0) 
+    data = np.delete(data,6,0) 
+    data = np.delete(data,11,0) 
+    data = np.delete(data,2542,0) 
 
     data = np.delete(data,176,1)            ## These columns have std = 0 => remove
     data = np.delete(data,167,1)
@@ -67,7 +75,7 @@ with open(sys.argv[1],newline='') as csvfile:
     X, Y = sm.fit_resample(X, Y) 
     #print(X.shape)
     #print(Y) 
-    clf.fit(X, Y) 
+    #clf.fit(X, Y) 
 
 with open(sys.argv[2],newline='') as csvfile:
     rows = csv.reader(csvfile)                                          ## Read testing data
@@ -118,22 +126,55 @@ with open(sys.argv[2],newline='') as csvfile:
     Y = data[:,3].reshape(-1,1).astype(np.double)                                           ## Extract attribute #4 as targets
     X = np.delete(data,3,1).astype(np.double)
 
+    pca = PCA(n_components = 2)                                                             ## Use PCA map the data onto a two-dimensional plane
+    newData = pca.fit_transform(X) 
+
+    clf.fit(newData, Y) 
+
     t1_p1 = 0                                                                               ## Confusion matrix initialization
     t1_p0 = 0
     t0_p1 = 0
     t0_p0 = 0  
-   
+
     for i in range(Y.shape[0]):                                                             ## Calculate confusion matrix
-        if Y[i][0] == 1 and clf.predict(X[i].reshape(1,-1)) == 1:
+        if Y[i][0] == 1 and clf.predict(newData[i].reshape(1,-1)) == 1:
             t1_p1 = t1_p1 + 1
-        elif Y[i][0] == 1 and clf.predict(X[i].reshape(1,-1)) == 0:
+        elif Y[i][0] == 1 and clf.predict(newData[i].reshape(1,-1)) == 0:
             t1_p0 = t1_p0 + 1
-        elif Y[i][0] == 0 and clf.predict(X[i].reshape(1,-1)) == 1:
+        elif Y[i][0] == 0 and clf.predict(newData[i].reshape(1,-1)) == 1:
             t0_p1 = t0_p1 + 1
-        elif Y[i][0] == 0 and clf.predict(X[i].reshape(1,-1)) == 0:
+        elif Y[i][0] == 0 and clf.predict(newData[i].reshape(1,-1)) == 0:
             t0_p0 = t0_p0 + 1
 
     print('t1_p1: ',t1_p1 , 't0_p1: ',t0_p1 )                                               ## Print confusion matrix
     print('t1_p0: ',t1_p0 , 't0_p0: ',t0_p0 )
 
+############################################################################### 
+################            Visualization            ########################## 
+############################################################################### 
    
+    plt.figure(figsize = (8,8))                                                             ## Source: https://matplotlib.org/gallery/lines_bars_and_markers/scatter_with_legend.html
+    plt.xlabel('Principal Component 1')
+    plt.ylabel('Principal Component 2')
+    plt.title('2 component PCA') 
+    
+    Positive = []
+    Negative = []
+
+    for i in range(Y.shape[0]):
+        if clf.predict(newData[i].reshape(1,-1)) == 1:
+            Positive.append(newData[i])
+        else:
+            Negative.append(newData[i]) 
+
+    Positive = np.array(Positive)
+    Negative = np.array(Negative)
+
+    print(Positive.shape)
+    print(Negative.shape) 
+
+    plt.scatter(Positive[:,0], Positive[:,1], c = 'r', s = 50 , alpha = 1 , label = 'Positive')  
+    plt.scatter(Negative[:,0], Negative[:,1], c = 'g', s = 50 , alpha = 0.5 , label = 'Negative')  
+    
+    plt.legend(loc='upper right')
+    plt.show()

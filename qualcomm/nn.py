@@ -35,8 +35,14 @@ class Datamanager():
             data = data[2:]
             
             data = np.array(data)
-            if name == 'train' :                                                                ## Missing data => remove
-                data = np.delete(data,2,0)            
+            if name == 'train' :                                                                 
+                data = np.delete(data,2,0)                                                      ## Missing data => remove
+                data = np.delete(data,0,0)                                                      ## Positive(attribute #4 = 2) outlier => remove        
+                data = np.delete(data,4,0) 
+                data = np.delete(data,5,0) 
+                data = np.delete(data,6,0) 
+                data = np.delete(data,11,0) 
+                data = np.delete(data,2542,0)           
             if name == 'test' :  
                 data = np.delete(data,1103,0) 
                 data = np.delete(data,1102,0) 
@@ -110,13 +116,13 @@ class Datamanager():
                             count_1_list.append(i)
                     print('count_0:',count_0)
                     print('count_1:',count_1)
-                    if self.over_sample:                                                        ## Copy the positive (attribute #4 = 2) samples
-                        add_one_X , add_one_Y = X[count_1_list] , Y[count_1_list] 
-                        noise = np.random.normal(0, 0.3, add_one_X.shape)
-                        add_one_X = add_one_X + noise 
-                        for i in range(self.over_sample_rate):
+                    if self.over_sample:                                                        ## Copy the positive (attribute #4 = 2) samples 
+                        ori_one_X , ori_one_Y = X[count_1_list] , Y[count_1_list] 
+                        for i in range(self.over_sample_rate): 
+                            noise = np.random.normal(0, 0.3, ori_one_X.shape)
+                            add_one_X = ori_one_X + noise 
                             X = np.concatenate((X,add_one_X),axis = 0)
-                            Y = np.concatenate((Y,add_one_Y),axis = 0)
+                            Y = np.concatenate((Y,ori_one_Y),axis = 0)
 
                     if self.down_sample:                                                        ## Delete the negative (attribute #4 = 1) samples
                         number = int(count_0 - count_1 * (self.over_sample_rate + 1) * self.down_sample_rate)
