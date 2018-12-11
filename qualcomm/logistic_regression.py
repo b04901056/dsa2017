@@ -4,11 +4,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.decomposition import PCA       ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html 
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
+      
 
-weight_positive = 0.999                     ## Make Logistic Regression cost-sensitive
-normalize = {}                              ## Record the mean and standard deviation for testing set normalization   
-logisticRegr = LogisticRegression(class_weight = {0 : 1 - weight_positive , 1 : weight_positive})  ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.linear_model.LogisticRegression.html#sklearn.linear_model.LogisticRegression.predict     
-                                 
+weight_positive = 0.65                  ## Make Decision Tree Classifier cost-sensitive
+normalize = {}                              ## Record the mean and standard deviation for testing set normalization
+logisticRegr = LogisticRegression(class_weight = {0 : 1 - weight_positive , 1 : weight_positive}) ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
 
 with open(sys.argv[1],newline='') as csvfile:
     rows = csv.reader(csvfile)              ## Read training data
@@ -76,7 +76,9 @@ with open(sys.argv[1],newline='') as csvfile:
     X, Y = sm.fit_resample(X, Y) 
     #print(X.shape)
     #print(Y) 
-    logisticRegr.fit(X, Y) 
+    pca = PCA(n_components = 2)                                         ## Use PCA map the data onto a two-dimensional plane
+    newData = pca.fit_transform(X) 
+    logisticRegr.fit(newData, Y) 
 
 with open(sys.argv[2],newline='') as csvfile:
     rows = csv.reader(csvfile)                                          ## Read testing data
@@ -126,12 +128,9 @@ with open(sys.argv[2],newline='') as csvfile:
 
     Y = data[:,3].reshape(-1,1).astype(np.double)                                           ## Extract attribute #4 as targets
     X = np.delete(data,3,1).astype(np.double)
-
-    pca = PCA(n_components = 2)                                                             ## Use PCA map the data onto a two-dimensional plane
+ 
     newData = pca.fit_transform(X) 
-
-    logisticRegr.fit(newData, Y) 
-
+ 
     t1_p1 = 0                                                                               ## Confusion matrix initialization
     t1_p0 = 0
     t0_p1 = 0

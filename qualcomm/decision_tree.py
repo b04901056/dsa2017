@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA       ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html 
 from imblearn.over_sampling import SMOTE
 
-weight_positive = 0.9999999                 ## Make Decision Tree Classifier cost-sensitive
+weight_positive = 0.9999996                  ## Make Decision Tree Classifier cost-sensitive
 normalize = {}                              ## Record the mean and standard deviation for testing set normalization
 clf = tree.DecisionTreeClassifier(class_weight = {0 : 1 - weight_positive , 1 : weight_positive}) ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
 
@@ -75,7 +75,9 @@ with open(sys.argv[1],newline='') as csvfile:
     X, Y = sm.fit_resample(X, Y) 
     #print(X.shape)
     #print(Y) 
-    clf.fit(X, Y) 
+    pca = PCA(n_components = 2)                                         ## Use PCA map the data onto a two-dimensional plane
+    newData = pca.fit_transform(X) 
+    clf.fit(newData, Y) 
 
 with open(sys.argv[2],newline='') as csvfile:
     rows = csv.reader(csvfile)                                          ## Read testing data
@@ -125,11 +127,8 @@ with open(sys.argv[2],newline='') as csvfile:
 
     Y = data[:,3].reshape(-1,1).astype(np.double)                                           ## Extract attribute #4 as targets
     X = np.delete(data,3,1).astype(np.double)
-
-    pca = PCA(n_components = 2)                                                             ## Use PCA map the data onto a two-dimensional plane
-    newData = pca.fit_transform(X) 
-
-    clf.fit(newData, Y) 
+ 
+    newData = pca.fit_transform(X)  
 
     t1_p1 = 0                                                                               ## Confusion matrix initialization
     t1_p0 = 0
@@ -162,7 +161,7 @@ with open(sys.argv[2],newline='') as csvfile:
     Negative = []
 
     for i in range(Y.shape[0]):
-        if clf.predict(newData[i].reshape(1,-1)) == 1:
+        if Y[i] == 1:
             Positive.append(newData[i])
         else:
             Negative.append(newData[i]) 

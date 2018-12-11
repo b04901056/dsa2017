@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA       ## Source: https://scikit-learn.org/
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
 
-weight_positive = 0.99425                    ## Make SVM cost-sensitive
+weight_positive = 0.9                    ## Make SVM cost-sensitive
 normalize = {}                              ## Record the mean and standard deviation for testing set normalization
 clf = SVC(gamma='auto',class_weight = {0 : 1 - weight_positive , 1 : weight_positive})  ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
 
@@ -17,8 +17,8 @@ with open(sys.argv[1],newline='') as csvfile:
     data = data[2:]
     
     data = np.array(data)
-    data = np.delete(data,2,0)       		## Missing data => remove
-    
+    data = np.delete(data,2,0)              ## Missing data => remove
+
     data = np.delete(data,0,0)              ## Positive(attribute #4 = 2) outlier => remove   
     data = np.delete(data,4,0) 
     data = np.delete(data,5,0) 
@@ -75,7 +75,9 @@ with open(sys.argv[1],newline='') as csvfile:
     X, Y = sm.fit_resample(X, Y) 
     #print(X.shape)
     #print(Y) 
-    #clf.fit(X, Y) 
+    pca = PCA(n_components = 2)                                         ## Use PCA map the data onto a two-dimensional plane
+    newData = pca.fit_transform(X) 
+    clf.fit(newData, Y) 
 
 with open(sys.argv[2],newline='') as csvfile:
     rows = csv.reader(csvfile)                                          ## Read testing data
@@ -125,11 +127,8 @@ with open(sys.argv[2],newline='') as csvfile:
 
     Y = data[:,3].reshape(-1,1).astype(np.double)                                           ## Extract attribute #4 as targets
     X = np.delete(data,3,1).astype(np.double)
-
-    pca = PCA(n_components = 2)                                                             ## Use PCA map the data onto a two-dimensional plane
-    newData = pca.fit_transform(X) 
-
-    clf.fit(newData, Y) 
+ 
+    newData = pca.fit_transform(X)  
 
     t1_p1 = 0                                                                               ## Confusion matrix initialization
     t1_p0 = 0
