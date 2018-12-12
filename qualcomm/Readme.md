@@ -8,7 +8,7 @@ This the Readme file of Qualcomm interview task
 - sklearn
 - imblearn
 
-## Instruction to run our code
+## Instruction to run the code
 
 DNN implementation
 ```
@@ -20,7 +20,7 @@ SVM implementation
 python .\svm.py .\DataMining_IV_x2\DataSet_IV_Training.csv .\DataMining_IV_x2\DataSet_IV_Test.csv
 ```
 
-LogisticRegression implementation
+Logistic Regression implementation
 ```
 python .\logistic_regression.py .\DataMining_IV_x2\DataSet_IV_Training.csv .\DataMining_IV_x2\DataSet_IV_Test.csv
 ```
