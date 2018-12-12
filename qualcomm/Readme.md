@@ -1,77 +1,36 @@
-t is the Readme file of MLDS_spring HW1 
+This the Readme file of Qualcomm interview task 
 ## Requirements
 
 - Python 3.6
 - Pytorch 0.3
-- Numpy
-- Matplotlib
+- numpy
+- matplotlib
+- sklearn
+- imblearn
 
 ## Instruction to run our code
 
-1-1-1
+DNN implementation
 ```
-cd 1-1/
-bash plot.sh
+python .\train.py -train .\DataMining_IV_x2\DataSet_IV_Training.csv -test .\DataMining_IV_x2\DataSet_IV_Test.csv  -u 170 32 1
 ```
-the picture will be ploted and placed in  hw1/1-1/pic
 
-1-1-2
+SVM implementation
 ```
-cd 1-1/
-bash plot_mnist.sh
-bash plot_cifar.sh
+python .\svm.py .\DataMining_IV_x2\DataSet_IV_Training.csv .\DataMining_IV_x2\DataSet_IV_Test.csv
 ```
-the picture will be ploted and placed in  hw1/1-1/pic
 
-1-2-1
+LogisticRegression implementation
 ```
-cd 1-2/1-2-1/
-bash plot.sh
+python .\logistic_regression.py .\DataMining_IV_x2\DataSet_IV_Training.csv .\DataMining_IV_x2\DataSet_IV_Test.csv
 ```
-the picture will be ploted and placed in  hw1/1-2/1-2-1/pic
 
-1-2-2
+Decision Tree implementation
 ```
-cd 1-2/1-2-2/
-bash plot.sh
+python .\decision_tree.py .\DataMining_IV_x2\DataSet_IV_Training.csv .\DataMining_IV_x2\DataSet_IV_Test.csv
 ```
-the picture will be ploted and placed in  hw1/1-2/1-2-2/pic
 
+t1_p1: True  positive t0_p1:  False negative
+t1_p0: False positive t0_p0:   True negative
 
-1-2-3
-```
-cd 1-2/1-2-3
-python test.py
-python look.py
-```
-the picture will be hw1/1-2/1-2-3/1-2-3_result.png
-
-
-1-3-1
-```
-cd 1-3/1-3-1/
-bash plot.sh
-```
-the picture will be ploted and placed in  hw1/1-3/1-3-1/pic
-
-
-1-3-2
-```
-cd 1-3/1-3-2/
-bash plot.sh
-```
-the picture will be ploted and placed in  hw1/1-3/1-3-2/pic
-
-1-3-3-1
-```
-cd 1-3/1-3-3-1/
-bash plot.sh
-```
-the picture will be ploted and placed in  hw1/1-3/1-3-3-1/pic
-
-1-3-3-2
-```
-cd 1-3/1-3-3-2/
-bash plot.sh
-```
-the picture will be ploted and placed in  hw1/1-3/1-3-3-2/pic
+The image represents the result of classification on testing data after applying PCA to reduce dimension to 2.

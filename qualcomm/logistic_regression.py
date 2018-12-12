@@ -170,8 +170,8 @@ with open(sys.argv[2],newline='') as csvfile:
     Positive = np.array(Positive)
     Negative = np.array(Negative)
 
-    print(Positive.shape)
-    print(Negative.shape) 
+    #print(Positive.shape)
+    #print(Negative.shape) 
 
     plt.scatter(Positive[:,0], Positive[:,1], c = 'r', s = 50 , alpha = 1 , label = 'Positive')  
     plt.scatter(Negative[:,0], Negative[:,1], c = 'g', s = 50 , alpha = 0.5 , label = 'Negative')  
