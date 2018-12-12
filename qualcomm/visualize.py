@@ -68,7 +68,7 @@ with open(sys.argv[1],newline='') as csvfile:
     print(X.shape)
     print(Y.shape)
 
-    #sm = SMOTE(sampling_strategy = 1)                                   ## Use SMOTE to generate minor class samples    source: https://imbalanced-learn.org/en/stable/generated/imblearn.over_sampling.SMOTE.html
+    #sm = SMOTE(sampling_strategy = 1)                                  ## Use SMOTE to generate minor class samples    source: https://imbalanced-learn.org/en/stable/generated/imblearn.over_sampling.SMOTE.html
     #X, Y = sm.fit_resample(X, Y) 
     
     count_0 = 0

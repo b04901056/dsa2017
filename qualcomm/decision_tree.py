@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from sklearn.decomposition import PCA       ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.decomposition.PCA.html 
 from imblearn.over_sampling import SMOTE
 
-weight_positive = 0.9999996                  ## Make Decision Tree Classifier cost-sensitive
+weight_positive = 0.9999999                 ## Make Decision Tree Classifier cost-sensitive
 normalize = {}                              ## Record the mean and standard deviation for testing set normalization
 clf = tree.DecisionTreeClassifier(class_weight = {0 : 1 - weight_positive , 1 : weight_positive}) ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
 
@@ -161,7 +161,7 @@ with open(sys.argv[2],newline='') as csvfile:
     Negative = []
 
     for i in range(Y.shape[0]):
-        if Y[i] == 1:
+        if clf.predict(newData[i].reshape(1,-1)) == 1:
             Positive.append(newData[i])
         else:
             Negative.append(newData[i]) 

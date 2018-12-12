@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
       
 
-weight_positive = 0.65                  ## Make Decision Tree Classifier cost-sensitive
+weight_positive = 0.65                      ## Make Decision Tree Classifier cost-sensitive
 normalize = {}                              ## Record the mean and standard deviation for testing set normalization
 logisticRegr = LogisticRegression(class_weight = {0 : 1 - weight_positive , 1 : weight_positive}) ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
 

@@ -5,7 +5,7 @@ from sklearn.decomposition import PCA       ## Source: https://scikit-learn.org/
 import matplotlib.pyplot as plt
 from imblearn.over_sampling import SMOTE
 
-weight_positive = 0.9                    ## Make SVM cost-sensitive
+weight_positive = 0.9                       ## Make SVM cost-sensitive
 normalize = {}                              ## Record the mean and standard deviation for testing set normalization
 clf = SVC(gamma='auto',class_weight = {0 : 1 - weight_positive , 1 : weight_positive})  ## Source: https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
 
