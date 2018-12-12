@@ -10,7 +10,7 @@ This the Readme file of Qualcomm interview task
 
 ## Instruction to run the code
 
-DNN implementation
+DNN implementation (with over/down sampling)
 ```
 python .\train.py -train .\DataMining_IV_x2\DataSet_IV_Training.csv -test .\DataMining_IV_x2\DataSet_IV_Test.csv  -u 170 32 1
 ```
