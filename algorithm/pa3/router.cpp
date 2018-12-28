@@ -89,7 +89,7 @@ public:
 		} 
 		distance[net_list[n].first] = 0;
 
-		priority_queue<pair<int, int>> heap; 
+		priority_queue< pair<int, int> > heap; 
 		heap.push(make_pair(0, net_list[n].first)); // distance : id
 
 		while (heap.size()) { 

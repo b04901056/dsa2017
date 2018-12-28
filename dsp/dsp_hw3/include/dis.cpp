@@ -1,0 +1,168 @@
+#include <iostream>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <vector> 
+#include <fstream>
+#include "Ngram.h"
+#include "VocabMap.h"
+using namespace std;
+
+#ifndef MAXWORDS
+#define MAXWORDS 256
+#endif
+
+#ifndef FAKE_ZERO
+#define FAKE_ZERO -100
+#endif
+
+std::vector<const char*> answer;
+const VocabIndex emptyContext[] = {Vocab_None};
+void recognize_file(Ngram& lm, VocabMap& map, File& testdata);
+LogP Viterbi(Ngram& lm, VocabMap& map, VocabString* words, unsigned count);
+VocabIndex getIndex(VocabString w);
+
+static int ngram_order;
+static Vocab voc; // Vocabulary in Language Model
+static Vocab vocZ, vocB; // Vocabulary ZhuYin and Big5 in ZhuYin-to-Big5 map
+
+VocabIndex getIndex(VocabString w)
+{
+	VocabIndex wid = voc.getIndex(w);
+	return (wid == Vocab_None)? voc.getIndex(Vocab_Unknown): wid; 
+}
+
+LogP Viterbi(Ngram& lm, VocabMap& map, VocabString* words, unsigned count)
+{
+	LogP Pro[MAXWORDS][1024] = {0.0};
+  	VocabIndex BackTrack[MAXWORDS][1024];
+	VocabIndex IntToIndex[MAXWORDS][1024];
+	int size[MAXWORDS] = {0};
+
+	/* Viterbi Algorithm initial */
+{
+	Prob p;
+	VocabIndex w;
+	VocabMapIter iter(map, vocZ.getIndex(words[0]));
+	for(int i = 0; iter.next(w, p); size[0]++, i++){
+		VocabIndex index = getIndex(vocB.getWord(w));
+		LogP curP = lm.wordProb(index, emptyContext);
+		if(curP == LogP_Zero) curP = FAKE_ZERO;
+		Pro[0][i] = curP;
+		IntToIndex[0][i] = w;
+		BackTrack[0][i] = 0;
+	}
+}
+
+	/* Viterbi Algorithm iteratively solve  */
+	for(int t = 1; t < count; t++){
+		Prob p;
+		VocabIndex w;
+		VocabMapIter iter(map, vocZ.getIndex(words[t]));
+		for(int j = 0; iter.next(w, p); size[t]++, j++){
+			VocabIndex index = getIndex(vocB.getWord(w));
+			LogP maxP = -1.0/0.0, pre;
+			for(int i = 0; i < size[t-1]; i++){
+				VocabIndex context[] = {getIndex(vocB.getWord(IntToIndex[t-1][i])), Vocab_None};
+				LogP curP = lm.wordProb(index, context);
+				LogP unigramP = lm.wordProb(index, emptyContext);
+				
+				if(curP == LogP_Zero && unigramP == LogP_Zero)
+					curP = FAKE_ZERO;
+
+				curP += Pro[t-1][i];		
+		
+				if(curP > maxP){
+					maxP = curP;
+					BackTrack[t][j] = i;
+				}
+			}
+			Pro[t][j] = maxP;
+			IntToIndex[t][j] = w;
+		}
+	}
+
+	/* maximize probability */
+	LogP maxP = -1.0/0.0;
+	int end = -1;
+	for(int i = 0; i < size[count-1]; i++){
+		LogP curP = Pro[count-1][i];
+		if(curP > maxP){
+			maxP = curP;
+			end = i;
+		}
+	}
+
+	/* BackTrack from end */
+	int path[MAXWORDS];
+	path[count-1] = end;
+	for(int t = count-2; t >= 0; t--)
+		path[t] = BackTrack[t+1][path[t+1]];
+
+	for(int t = 0; t < count; t++)
+		printf("%s%s", vocB.getWord(IntToIndex[t][path[t]]), (t == count-1)? "\n": " ");
+
+	for(int t = 0; t < count; t++)
+		answer.push_back(vocB.getWord(IntToIndex[t][path[t]]));
+
+	return maxP;
+}
+
+void recognize_file(Ngram& lm, VocabMap& map, File& testdata)
+{
+	char* line = NULL;
+	while(line = testdata.getline()){
+		VocabString WordsInLine[maxWordsPerLine];
+		unsigned count = Vocab::parseWords(line, &WordsInLine[1], maxWordsPerLine);
+		//printf("%s",*WordsInLine[1]);
+		//exit(0); 
+		WordsInLine[0] = "<s>";
+		WordsInLine[count+1] = "</s>";
+		LogP MaxP = Viterbi(lm, map, WordsInLine, count+2);
+	}
+}
+
+int main(int argc, char *argv[])
+{
+	ngram_order = atoi(argv[1]); 
+
+	Ngram lm(voc, ngram_order);	
+	VocabMap map(vocZ, vocB); 
+	/* read Language Model and ZhuYin-to-Big5 map */
+{
+	File lmFile(argv[2], "r" );
+	lm.read(lmFile);
+	lmFile.close();
+
+	File mapfile(argv[3], "r");
+	map.read(mapfile);
+	mapfile.close();
+}
+	
+	/* recognize testdata (argv[2])*/
+	File testdata(argv[4], "r");
+	 
+	recognize_file(lm, map, testdata);
+	
+	testdata.close();
+
+	fstream file; 
+    file.open(argv[5], ios::out);      //開啟檔案
+    if(!file){
+			cerr << "Can't open file!\n";
+			exit(1);     //在不正常情形下，中斷程式的執行
+    }
+    char* a = "</s>";
+    int count = 0; 
+    for(int i=0;i<answer.size();i++){
+    	count++;
+    	file<<answer[i];
+    	if(*answer[i]==*a && count>1) {
+     		file<<"\n";
+     		printf("!");
+     		count = 0;
+    	}
+	}
+
+	return 0;
+}
