@@ -1,8 +1,20 @@
-#include <bits/stdc++.h>
+#include <iostream>
+#include <vector>
+#include <string>
+#include <fstream>
+#include <cstdlib> 
+#include <cstdio> 
+#include <cstring>
+#include <cmath> 
+#include <climits>
+#include <set>
+#include <queue>
+#include <iomanip>
+#include <float.h>
 using namespace std;   
 
 double** weight; 
-double base = 10;
+double base = 2;
 
 class router{
 public:
@@ -85,23 +97,24 @@ public:
 
 		for(int i=0;i<MAX_NODE;i++){
 			predecessor[i] = -1;
-			distance[i] = INT_MAX;  
+			distance[i] = DBL_MAX;  
 		} 
 		distance[net_list[n].first] = 0;
 
-		priority_queue< pair<int, int> > heap; 
+		priority_queue< pair<double, int> > heap; 
 		heap.push(make_pair(0, net_list[n].first)); // distance : id
 
 		while (heap.size()) { 
+			//cout<<heap.size()<<endl;
 			while (heap.size() && -heap.top().first != distance[heap.top().second])
 				heap.pop();	 
 			if(heap.size() == 0) break;
 
-			pair<int, int> out = heap.top();
+			pair<double, int> out = heap.top();
 			heap.pop();
 
 			int node = out.second; //id
-			int dis = - out.first;
+			double dis = - out.first;
 
 			int x = id_to_cooridate(node).first;
 			int y = id_to_cooridate(node).second;
@@ -112,7 +125,7 @@ public:
 				int id = cooridate_to_id(X, Y);
 				if (X < 0 || X >= x_max || Y < 0 || Y >= y_max) continue;
 				
-				int new_dis = dis + weight[node][i];
+				double new_dis = dis + weight[node][i];
 				if (new_dis >= distance[id]) continue;
 
 				distance[id] = new_dis;
@@ -178,6 +191,7 @@ int main(int argc, char *argv[]){
 	router dijkstra;  
 	dijkstra.read(argv[1]);
 	for(int i=0;i<dijkstra.net_num;i++){ 
+		//cout<<i<<endl;
 		dijkstra.route(i);
 	}  
 	ofstream filePtr;                       
@@ -194,5 +208,6 @@ int main(int argc, char *argv[]){
 	}
 
 	filePtr.close(); 
+	return 0;
 }
  
