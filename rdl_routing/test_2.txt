@@ -1,0 +1,60 @@
+DIEAREA 30 30
+WIRELENGTH 2
+VIAWIDTH 1
+VIACOST 50
+SPACING 1
+IO i_01 2 20 1  
+IO i_02 2 15 1  
+IO i_03 2 10 1  
+IO clk_i 2 2 1
+IO i_04 7 2 1
+IO i_05 18 2 1
+IO i_06 28 2 1
+IO i_07 28 5 1
+IO i_08 28 18 1
+IO i_09 28 21 1
+IO i_10 28 25 1
+IO i_11 24 28 1
+IO i_12 16 28 1
+IO i_13 8 28 1
+IO i_14 5 28 1  
+BUMP b_01 5 5    
+BUMP b_02 5 10 1    
+BUMP b_03 5 15 1  
+BUMP b_04 5 20 1  
+BUMP b_05 5 25 1  
+BUMP b_06 10 5 1  
+BUMP b_07 10 10 1  
+BUMP b_08 10 15 1  
+BUMP b_09 10 20 1  
+BUMP b_10 10 25 1  
+BUMP b_11 15 5 1  
+BUMP b_12 15 10 1  
+BUMP b_13 15 15 1  
+BUMP b_14 15 20 1  
+BUMP b_15 15 25 1  
+BUMP b_16 20 5 1  
+BUMP b_17 20 10 1  
+BUMP b_18 20 15 1  
+BUMP b_19 20 20 1  
+BUMP b_20 20 25 1  
+BUMP b_21 25 5 1  
+BUMP b_22 25 10 1  
+BUMP b_23 25 15 1  
+BUMP b_24 25 20 1  
+BUMP b_25 25 25 1  
+NET clock clk_i b_05      
+NET input_01 i_01 b_03      
+NET input_02 i_02 b_17      
+NET input_03 i_03 b_22       
+NET input_04 i_04 b_09   
+NET input_05 i_05 b_19     
+NET input_06 i_06 b_23     
+NET input_07 i_07 b_02     
+NET input_08 i_08 b_13      
+NET input_09 i_09 b_24   
+NET input_10 i_10 b_08     
+NET input_11 i_11 b_11     
+NET input_12 i_12 b_14     
+NET input_13 i_13 b_25       
+NET input_14 i_14 b_12   

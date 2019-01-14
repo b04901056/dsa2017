@@ -1,15 +1,4 @@
-#include <iostream>
-#include <vector>
-#include <string>
-#include <fstream>
-#include <cstdlib> 
-#include <cstdio> 
-#include <cstring>
-#include <cmath> 
-#include <climits>
-#include <set>
-#include <queue>
-#include <iomanip>
+#include <bits/stdc++.h>
 using namespace std;
  
 class node{
@@ -57,7 +46,7 @@ public:
 	}
 	string name;
 	node source , target; 
-	vector<node> node_path;
+	vector<node> node_path; 
 };
 
 class obstacle{
@@ -262,17 +251,4 @@ public:
 		} 
 		return false;
  	}
-};
-
-int main(){
-	router astar;
-	astar.read("test_data.txt"); 
-	cout<<endl; 
-	for(int h=0;h<astar.net_list.size();h++){
-		bool success = astar.routing(h);
-		if(success) cout<<"Successfully route net "<<astar.net_list[h].name<<endl;
-		else cout<<"Fail routing net "<<astar.net_list[h].name<<endl;
-	}
-	cout<<endl;  
-}
- 
+}; 
