@@ -137,8 +137,7 @@ public:
 		}
 	    return true;
  	}
-
- 	bool routing(int h){ // 0:empty 1:obstacle 2:pin 3:wire  
+ 	vector< pair<int,int> > routing(int h){ // 0:empty 1:obstacle 2:pin 3:wire  
 
 		cout<<"routing net "<<net_list[h].name<<endl;
 
@@ -251,4 +250,27 @@ public:
 		} 
 		return false;
  	}
+  	bool routing_diea_area(int** die_area,string name,node s,node t,int x_,int y_){
+ 		is_empty = die_area;
+ 		x_max = x_;
+ 		y_max = y_;
+ 		net n(name,s,t,is_empty);
+ 		net_list.push_back(n);
+ 		routing(0);
+ 	}
 }; 
+
+int main(int argc,char** argv){
+	router astar;
+	astar.read(argv[1]);
+	//astar.routing(0);
+	//astar.routing(1);
+	
+	int ** die_area = astar.is_empty;
+	int x_max = astar.x_max , y_max = astar.y_max;
+	string net_name = astar.net_list[0].name;
+	node s = astar.net_list[0].source;
+	node t = astar.net_list[0].target;
+	router tmp;
+	tmp.routing_diea_area(die_area,net_name,s,t,x_max,y_max);
+}
