@@ -76,11 +76,13 @@ struct CmpNodePtrs
 class router{
 public:
 	router(){
+		x_min = 0;
+		y_min = 0;
 	}
 	int** is_empty;
  	vector<net> net_list;
  	vector<obstacle> obstacle_list;
- 	int x_max , y_max;
+ 	int x_max,y_max,x_min,y_min;
 
  	bool read(const string& txt_file){
  		fstream fin;
@@ -137,7 +139,7 @@ public:
 		}
 	    return true;
  	}
- 	vector< pair<int,int> > routing(int h){ // 0:empty 1:obstacle 2:pin 3:wire  
+ 	bool routing(int h, vector< pair<int,int> >* result){ // 0:empty 1:obstacle 2:pin 3:wire  
 
 		cout<<"routing net "<<net_list[h].name<<endl;
 
@@ -146,24 +148,24 @@ public:
 		
 		// Save the closed_set
 		node*** closed_set;
-		closed_set = new node** [x_max+1];
-    	for(int i=0;i<=x_max;i++){
-    		closed_set[i] = new node*[y_max+1];
+		closed_set = new node** [x_max-x_min+1];
+    	for(int i=0;i<=x_max-x_min;i++){
+    		closed_set[i] = new node*[y_max-y_min+1];
     	} 
-    	for(int i=y_max;i>=0;i--){
-    		for(int j=0;j<=x_max;j++){
+    	for(int i=y_max-y_min;i>=0;i--){
+    		for(int j=0;j<=x_max-x_min;j++){
     			closed_set[j][i] = NULL;
     		}
     	} 
 
 		// Record the best distance to a node
 		int** shortest_value;
-		shortest_value = new int* [x_max+1];
-    	for(int i=0;i<=x_max;i++){
-    		shortest_value[i] = new int[y_max+1];
+		shortest_value = new int* [x_max-x_min+1];
+    	for(int i=0;i<=x_max-x_min;i++){
+    		shortest_value[i] = new int[y_max-y_min+1];
     	} 
-    	for(int i=y_max;i>=0;i--){
-    		for(int j=0;j<=x_max;j++){
+    	for(int i=y_max-y_min;i>=0;i--){
+    		for(int j=0;j<=x_max-x_min;j++){
     			shortest_value[j][i] = INT_MAX;
     		}
     	}   
@@ -198,10 +200,12 @@ public:
 			// Termination
 			if(*current == target_node){ 
 				node* output = current;
+				(*result).push_back(make_pair(output->pos[0],output->pos[1]));
 				cout<<(*output)<<endl; 
 				while(output->parent!=NULL){
 					cout<<*(output->parent)<<endl; 
 					output = output->parent;
+					(*result).push_back(make_pair(output->pos[0],output->pos[1]));
 					is_empty[output->pos[0]][output->pos[1]] = 3; 
 				}
 				is_empty[source_node[0]][source_node[1]] = 2; 
@@ -214,7 +218,7 @@ public:
 				for(int k=-1;k<=1;k++){  
 					// If candidate is not traversable or in closed_set => skip  
 					if((j==0 && k==0)) continue;   
-					if((current->pos[0]+j < 0 ) || (current->pos[0]+j > x_max ) || (current->pos[1]+k < 0)|| (current->pos[1]+k > y_max)) continue;
+					if((current->pos[0]+j < x_min ) || (current->pos[0]+j > x_max ) || (current->pos[1]+k < y_min)|| (current->pos[1]+k > y_max)) continue;
 					if( (j * k != 0) && (is_empty[current->pos[0] + j ][current->pos[1]] != 0 && is_empty[current->pos[0]][current->pos[1] + k ] != 0)) continue; 
 
 					node* candidate = new node(current->pos[0]+j , current->pos[1]+k);  
@@ -250,27 +254,38 @@ public:
 		} 
 		return false;
  	}
-  	bool routing_diea_area(int** die_area,string name,node s,node t,int x_,int y_){
+  	bool routing_diea_area(int** die_area,string name,node s,node t,int x_ma,int y_ma,int x_mi,int y_mi,vector< pair<int,int> >* result ){
  		is_empty = die_area;
- 		x_max = x_;
- 		y_max = y_;
+ 		x_max = x_ma;
+ 		y_max = y_ma;
+ 		x_min = x_mi;
+ 		y_min = y_mi;
  		net n(name,s,t,is_empty);
  		net_list.push_back(n);
- 		routing(0);
+ 		routing(0,result);
  	}
 }; 
 
 int main(int argc,char** argv){
 	router astar;
+	vector< pair<int,int> >* result;
+	result = new vector< pair<int,int> >;
 	astar.read(argv[1]);
-	//astar.routing(0);
-	//astar.routing(1);
-	
+	astar.routing(0,result);
+	astar.routing(1,result);
+	astar.routing(2,result);
+	for(int i=0;i<(*result).size();i++){
+		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+	}
+	/*
 	int ** die_area = astar.is_empty;
 	int x_max = astar.x_max , y_max = astar.y_max;
-	string net_name = astar.net_list[0].name;
-	node s = astar.net_list[0].source;
-	node t = astar.net_list[0].target;
+	string net_name = astar.net_list[1].name;
+	node s = astar.net_list[1].source;
+	node t = astar.net_list[1].target;
 	router tmp;
-	tmp.routing_diea_area(die_area,net_name,s,t,x_max,y_max);
+	tmp.routing_diea_area(die_area,net_name,s,t,x_max,y_max,0,0,result);
+	for(int i=0;i<(*result).size();i++){
+		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+	}*/
 }
