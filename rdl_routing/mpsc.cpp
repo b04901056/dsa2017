@@ -91,6 +91,22 @@ public:
 			}
 		}
 	}
+	void execute_rdl(int node_num,int* table){
+		node_number = node_num;
+		pair_table = table;
+		mpsc_table = new mis**[node_number];
+		for(int i=0;i<node_number;i++){
+			mpsc_table[i] = new mis*[node_number];
+		}
+
+		for(int i=0;i<node_number;i++){
+			for(int j=0;j<node_number;j++){
+				if(i <= j) mpsc_table[i][j] = new mis();
+				else mpsc_table[i][j] = NULL;
+			}
+		}
+		execute();	
+	}
 
 	void execute(){
 		for(int j = 0 ;j < node_number;j++){
@@ -174,6 +190,11 @@ public:
 int main(int argc, char** argv){
 	mpsc mpsc_object;
 	mpsc_object.read(argv[1]);
-	mpsc_object.execute();
-	mpsc_object.result(); 
+	//mpsc_object.execute();
+	//mpsc_object.result(); 
+	int* table = mpsc_object.pair_table;
+	int node_num = mpsc_object.node_number;
+	mpsc tmp;
+	tmp.execute_rdl(node_num,table);
+	tmp.result();
 }
