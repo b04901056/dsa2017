@@ -139,7 +139,7 @@ public:
 		}
 	    return true;
  	}
- 	bool routing(int h, vector< pair<int,int> >* result){ // 0:empty 1:obstacle 2:pin 3:wire  
+ 	bool routing(int h, vector< pair<int,int> >* result,pair<int,int> whole_die){ // 0:empty 1:obstacle 2:pin 3:wire  
 
 		cout<<"routing net "<<net_list[h].name<<endl;
 
@@ -148,24 +148,24 @@ public:
 		
 		// Save the closed_set
 		node*** closed_set;
-		closed_set = new node** [x_max-x_min+1];
-    	for(int i=0;i<=x_max-x_min;i++){
-    		closed_set[i] = new node*[y_max-y_min+1];
+		closed_set = new node** [whole_die.first+1];
+    	for(int i=0;i<=whole_die.first;i++){
+    		closed_set[i] = new node*[whole_die.second+1];
     	} 
-    	for(int i=y_max-y_min;i>=0;i--){
-    		for(int j=0;j<=x_max-x_min;j++){
+    	for(int i=whole_die.second;i>=0;i--){
+    		for(int j=0;j<=whole_die.first;j++){
     			closed_set[j][i] = NULL;
     		}
     	} 
 
 		// Record the best distance to a node
 		int** shortest_value;
-		shortest_value = new int* [x_max-x_min+1];
-    	for(int i=0;i<=x_max-x_min;i++){
-    		shortest_value[i] = new int[y_max-y_min+1];
+		shortest_value = new int* [whole_die.first+1];
+    	for(int i=0;i<=whole_die.first;i++){
+    		shortest_value[i] = new int[whole_die.second+1];
     	} 
-    	for(int i=y_max-y_min;i>=0;i--){
-    		for(int j=0;j<=x_max-x_min;j++){
+    	for(int i=whole_die.second-y_min;i>=0;i--){
+    		for(int j=0;j<=whole_die.first;j++){
     			shortest_value[j][i] = INT_MAX;
     		}
     	}   
@@ -237,32 +237,21 @@ public:
 						shortest_value[candidate->pos[0]][candidate->pos[1]] = candidate->f_cost;
 					}
 				}
-			}  
-			/*cout<<"===================="<<endl;
-			for(int i=y_max;i>=0;i--){
-			    for(int j=0;j<=x_max;j++){
-			    	if(is_empty[j][i]!=0){
-			    		cout<<setw(10)<<is_empty[j][i]<<" ";
-			    	}
-			    	else{
-			    		cout<<setw(10)<<shortest_value[j][i]<<" ";
-			    	}
-			    }
-			    cout<<endl;
-			}
-			cout<<"===================="<<endl;*/
+			}   
 		} 
 		return false;
  	}
-  	bool routing_diea_area(int** die_area,string name,node s,node t,int x_ma,int y_ma,int x_mi,int y_mi,vector< pair<int,int> >* result ){
+  	bool routing_diea_area(int** die_area,string name,node s,node t,pair<int,int> max_die,pair<int,int> min_die,pair<int,int> whole_die,vector< pair<int,int> >* result){
  		is_empty = die_area;
- 		x_max = x_ma;
- 		y_max = y_ma;
- 		x_min = x_mi;
- 		y_min = y_mi;
+ 		x_max = max_die.first;
+ 		y_max = max_die.second;
+ 		x_min = min_die.first;
+ 		y_min = min_die.second;
  		net n(name,s,t,is_empty);
  		net_list.push_back(n);
- 		routing(0,result);
+ 		bool success = routing(0,result,whole_die);
+ 		net_list.clear();
+ 		return success;
  	}
 }; 
 
@@ -271,21 +260,39 @@ int main(int argc,char** argv){
 	vector< pair<int,int> >* result;
 	result = new vector< pair<int,int> >;
 	astar.read(argv[1]);
-	astar.routing(0,result);
+	/*astar.routing(0,result);
 	astar.routing(1,result);
 	astar.routing(2,result);
 	for(int i=0;i<(*result).size();i++){
 		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
-	}
-	/*
+	}*/
+	
 	int ** die_area = astar.is_empty;
 	int x_max = astar.x_max , y_max = astar.y_max;
-	string net_name = astar.net_list[1].name;
-	node s = astar.net_list[1].source;
-	node t = astar.net_list[1].target;
+	string net_name = astar.net_list[0].name;
+	node s = astar.net_list[0].source;
+	node t = astar.net_list[0].target; 
 	router tmp;
-	tmp.routing_diea_area(die_area,net_name,s,t,x_max,y_max,0,0,result);
+	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,5),make_pair(1,0),make_pair(x_max,y_max),result)<<endl;
 	for(int i=0;i<(*result).size();i++){
 		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
-	}*/
+	}
+
+	(*result).clear(); 
+	net_name = astar.net_list[1].name;
+	s = astar.net_list[1].target;
+	t = astar.net_list[1].source; 
+	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,5),make_pair(1,0),make_pair(x_max,y_max),result)<<endl;
+	for(int i=0;i<(*result).size();i++){
+		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+	}
+
+	(*result).clear(); 
+	net_name = astar.net_list[2].name;
+	s = astar.net_list[2].source;
+	t = astar.net_list[2].target;  
+	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,5),make_pair(1,0),make_pair(x_max,y_max),result)<<endl;
+	for(int i=0;i<(*result).size();i++){
+		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+	}
 }
