@@ -179,10 +179,7 @@ public:
 				break;
 			} 
 		}
-		cout<< record->size() - valid <<endl;
-		for(int i=valid;i<record->size();i++){ 
-			cout<<(*record)[i].first<<" "<<(*record)[i].second<<endl; 
-		}
+		for(int i=0;i<valid;i++) (*record).erase((*record).begin());
 		return record;
 	}
 };
@@ -305,7 +302,9 @@ public:
 	vector< vector<string> > pad_string;
 
 	vector< vector<string> > LCS_string;
-	vector< vector<string> > result;
+	vector< vector<string> > result_string;
+
+	vector<string> io_connected_pad;
 
 	int** die_area; // 0:empty 1:bump_pad 2:io 3:wire 
 
@@ -401,6 +400,7 @@ public:
 		int x_pos = cur.first;
 		int y_pos = cur.second; 
 		space_between_pad = abs(bump_pad_position[bump_pad_list[0]].first - bump_pad_position[bump_pad_list[1]].first ) + abs(bump_pad_position[bump_pad_list[0]].second - bump_pad_position[bump_pad_list[1]].second ); 
+		
 		for(int i=0;i<ring_pad_number.size();i++){
 			vector<string> tmp;
 			for(int j=0;j<ring_pad_number[i] - 1;j++){
@@ -454,10 +454,9 @@ public:
 			for(int j=0;j<pad_string[i].size();j++){
 				cout<<pad_string[i][j]<<" ";
 			}
-			cout<<endl;
+			cout<<endl; 
 		}
-		cout<<endl;
-		vector<string> io_connected_pad;
+		cout<<endl;  
 		for(int i=0;i<io_string.size();i++){
 			for(int j=0;j<net_list.size();j++){
 				if(net_list[j].io == io_string[i]){
@@ -484,18 +483,175 @@ public:
 			}
 			cout<<endl;
 		}
+		cout<<endl;
 	}
-	void compute_net_sequence(){
-		
+	void compute_net_sequence(){ 
+		result_string.push_back(pad_string[0]);
 
+		for(int i=1;i<pad_string.size();i++){
+			map<string,int> present_detour_source;
+			vector<string> tmp; 
+			int pad_current_point = 0 , io_current_point = 0 , tmp_current_point = 0;
+  
+			// iteration
+			for(int j=0;j<LCS_string[i-1].size();j++){ 
+				int count = 0;
+				while(io_connected_pad[io_current_point] != LCS_string[i-1][j]){ 
+					auto  it = find(pad_string[i].begin(), pad_string[i].end(), io_connected_pad[io_current_point]);
+					auto  it_ = find(result_string[i-1].begin(), result_string[i-1].end(), io_connected_pad[io_current_point]);
+					if(it != pad_string[i].end() || it_ != result_string[i-1].end()){
+						tmp.push_back(io_connected_pad[io_current_point]); 
+						count++;
+					}	 
+					io_current_point++;
+				}  
+				for(int j=0;j<tmp.size();j++){
+					cout<<tmp[j]<<" ";
+				}
+				cout<<endl<<endl;  
+				while(pad_string[i][pad_current_point] != LCS_string[i-1][j]){  
+					auto  it = find(io_connected_pad.begin(), io_connected_pad.end(), pad_string[i][pad_current_point]);
+					if(it != io_connected_pad.end()){
+						tmp.push_back(pad_string[i][pad_current_point]);  
+						present_detour_source[pad_string[i][pad_current_point]] = tmp.size() - 1;
+					}	 
+					pad_current_point++; 
+				}  
+				for(int j=0;j<tmp.size();j++){
+					cout<<tmp[j]<<" ";
+				}
+				cout<<endl<<endl;
+				if(tmp_current_point + count != tmp.size()){
+					for(int k=0;k<count;k++){
+						tmp.push_back(tmp[tmp_current_point + k]);
+					}
+				} 
+				for(int j=0;j<tmp.size();j++){
+					cout<<tmp[j]<<" ";
+				}
+				cout<<endl<<"============="<<endl;
+
+				tmp_current_point = tmp.size();
+				io_current_point++;
+				pad_current_point++;
+			}
+			cout<<endl<<"======================================="<<endl;
+			// after the last LCS element
+			int count = 0;
+			while(io_current_point < io_connected_pad.size()){ 
+				auto  it = find(pad_string[i].begin(), pad_string[i].end(), io_connected_pad[io_current_point]);
+				if(it != pad_string[i].end()){
+					tmp.push_back(io_connected_pad[io_current_point]); 
+					count++;
+				}	 
+				io_current_point++;
+			}  
+			while(pad_current_point < pad_string[i].size()){  
+				auto  it = find(io_connected_pad.begin(), io_connected_pad.end(), pad_string[i][pad_current_point]);
+				auto  it_ = find(result_string[i-1].begin(), result_string[i-1].end(), io_connected_pad[io_current_point]);
+				if(it != pad_string[i].end() || it_ != result_string[i-1].end()){
+					tmp.push_back(pad_string[i][pad_current_point]);  
+					present_detour_source[pad_string[i][pad_current_point]] = tmp.size() - 1;
+				}	 
+				pad_current_point++; 
+			}  
+			if(tmp_current_point + count != tmp.size()){
+				for(int j=0;j<count;j++){
+					tmp.push_back(tmp[tmp_current_point + j]);
+				}
+			} 
+
+			for(int j=0;j<tmp.size();j++){
+				cout<<tmp[j]<<" ";
+			}
+			cout<<endl;
+
+			// construct mpsc object
+			vector< pair<int,int> > mpsc_pair;
+			map<string,int> present_detour_num; 
+
+			for(auto it = present_detour_source.begin();it != present_detour_source.end();it++){
+				cout<<it->first<<" : "<<it->second<<"  ";
+				present_detour_num[it->first] = -2;
+			}
+			cout<<endl;
+			for(int j=0;j<tmp.size();j++){
+				if(present_detour_source.find(tmp[j]) != present_detour_source.end()) present_detour_num[tmp[j]] += 1;
+			}
+			for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
+				cout<<it->first<<" : "<<it->second<<"  ";
+			}
+			cout<<endl;
+			for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
+				for(int k=0;k<it->second;k++){
+					tmp.insert(tmp.begin() + present_detour_source[it->first],it->first);
+					for(auto iterator = present_detour_source.begin();iterator != present_detour_source.end();iterator++){
+						if(iterator->second >= present_detour_source[it->first]) iterator->second++;
+					}
+				}
+			}
+			for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
+				int start = 0,end = tmp.size()-1;
+				while(true){ 
+					while(tmp[start] != it->first) start++;
+					while(tmp[end] != it->first) end--;
+					if(start >= end) break;
+					mpsc_pair.push_back( make_pair(start,end) ); 
+					start++;
+					end--;
+				}
+			}
+			for(int j=0;j<mpsc_pair.size();j++){
+				cout<<mpsc_pair[j].first<<" "<<mpsc_pair[j].second<<endl;
+			}
+			cout<<endl;
+			for(int j=result_string[i-1].size()-1;j>=0;j--){
+				int term = tmp.size();
+				for(int k=0;k<term;k++){
+					if(result_string[i-1][j] == tmp[k]){
+						mpsc_pair.push_back( make_pair(k,tmp.size()) );
+						tmp.push_back(result_string[i-1][j]);
+						present_detour_source[tmp[k]] = tmp.size() - 1;
+					}
+				}
+			}
+
+			for(int j=0;j<mpsc_pair.size();j++){
+				cout<<mpsc_pair[j].first<<" "<<mpsc_pair[j].second<<endl;
+			} 
+			cout<<endl;
+
+			// calculate result_string 
+			int* pair_table;
+			pair_table = new int[mpsc_pair.size()*2];
+			for(int j=0;j<mpsc_pair.size();j++){
+				pair_table[mpsc_pair[j].first] = mpsc_pair[j].second;
+				pair_table[mpsc_pair[j].second] = mpsc_pair[j].first;
+			}
+			mpsc mpsc_object;
+			mpsc_object.execute_rdl(mpsc_pair.size()*2,pair_table);
+			vector<node_pair>* mis = mpsc_object.result();
+
+			for(int j=0;j<(*mis).size();j++){
+				cout<<(*mis)[j].first<<" "<<(*mis)[j].second<<endl;
+			}
+			cout<<endl;
+
+			// 選 present_detour_source 的另外一個 !
+
+			// update net path
+
+
+		}
 	}
 }; 
 
-int main(int argc, char** argv){
+int main(int argc, char** argv){ 
 	rdl rdl_object;
 	rdl_object.read(argv[1]);
 	rdl_object.compute_pad_string();
 	rdl_object.compute_lcs();
+	rdl_object.compute_net_sequence();
 	
 	return 0;
 }
