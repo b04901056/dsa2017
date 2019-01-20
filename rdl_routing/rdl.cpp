@@ -508,12 +508,12 @@ public:
 		    else if(strcmp(buffer[0],"IO")==0){
   				io_string.push_back(buffer[1]);
   				io_position[buffer[1]] = make_pair(atoi(buffer[2]),atoi(buffer[3]));
-  				//die_area[atoi(buffer[2])][atoi(buffer[3])] = 2;
+  				die_area[atoi(buffer[2])][atoi(buffer[3])] = 2;
 		    } 
 		    else if(strcmp(buffer[0],"BUMP")==0){  
    				bump_pad_list.push_back(buffer[1]);
    				bump_pad_position[buffer[1]] = make_pair(atoi(buffer[2]),atoi(buffer[3])); 
-   				//die_area[atoi(buffer[2])][atoi(buffer[3])] = 2; 
+   				die_area[atoi(buffer[2])][atoi(buffer[3])] = 2; 
 		    } 
 		    else if(strcmp(buffer[0],"NET")==0){ 
 		    	node a(io_position[buffer[2]].first,io_position[buffer[2]].second);
@@ -539,12 +539,12 @@ public:
 	    }
 	    cout<<endl; */   
 
-	    for(int i=y_max;i>=0;i--){
+	    /*for(int i=y_max;i>=0;i--){
 		    for(int j=0;j<=x_max;j++){
 		    	cout<<die_area[j][i]<<" ";
 		    }
 		    cout<<endl;
-		}     
+		}   */  
 	    return true;
 	}
 	void compute_pad_string(){ 
@@ -896,29 +896,45 @@ int main(int argc, char** argv){
 	rdl_object.compute_pad_string();
 	rdl_object.compute_lcs();
 	rdl_object.compute_net_sequence();
-	cout<<endl<<"==========================================================="<<endl; 
-	cout<<"result_string:"<<endl;
-	for(int i=0;i<rdl_object.result_string.size();i++){
-		for(int j=0;j<rdl_object.result_string[i].size();j++){
-			cout<<rdl_object.result_string[i][j]<<" ";
-		}
-		cout<<endl;
+	ofstream filePtr;                       
+	filePtr.open(argv[2], ios::out);
+
+	filePtr<<"IO_connected_pad:"<<endl;
+	for(int i=0;i<rdl_object.io_connected_pad.size();i++){
+		filePtr<<rdl_object.io_connected_pad[i]<<" "; 
 	}
-	cout<<endl;
-	cout<<"LCS_string"<<endl;
+	filePtr<<endl<<endl;
+
+	filePtr<<"Pad_string:"<<endl;
+	for(int i=0;i<rdl_object.pad_string.size();i++){
+		for(int j=0;j<rdl_object.pad_string[i].size();j++){
+			filePtr<<rdl_object.pad_string[i][j]<<" ";
+		}
+		filePtr<<endl;
+	}
+	filePtr<<endl;
+	filePtr<<"LCS_string:"<<endl;
 	for(int i=0;i<rdl_object.LCS_string.size();i++){
 		for(int j=0;j<rdl_object.LCS_string[i].size();j++){
-			cout<<rdl_object.LCS_string[i][j]<<" ";
+			filePtr<<rdl_object.LCS_string[i][j]<<" ";
 		}
-		cout<<endl;
+		filePtr<<endl;
 	}
-	cout<<endl;
-	cout<<"mpsc_priority:"<<endl;
+	filePtr<<endl;
+	filePtr<<"Result_string:"<<endl;
+	for(int i=0;i<rdl_object.result_string.size();i++){
+		for(int j=0;j<rdl_object.result_string[i].size();j++){
+			filePtr<<rdl_object.result_string[i][j]<<" ";
+		}
+		filePtr<<endl;
+	}
+	filePtr<<endl;
+	filePtr<<"MPSC_priority:"<<endl;
 	for(int i=0;i<rdl_object.mpsc_priority.size();i++){
 		for(int j=0;j<rdl_object.mpsc_priority[i].size();j++){
-			cout<<rdl_object.mpsc_priority[i][j]<<" ";
+			filePtr<<rdl_object.mpsc_priority[i][j]<<" ";
 		}
-		cout<<endl;
+		filePtr<<endl;
 	}
 
 	/*router router_rdl;

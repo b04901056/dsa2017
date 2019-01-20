@@ -130,18 +130,18 @@ public:
 		    } 
 		    buffer.clear();
 	    }
-	    cout<<endl;
+	    /*cout<<endl;
 	    for(int i=y_max;i>=0;i--){
 		    for(int j=0;j<=x_max;j++){
 		    	cout<<is_empty[j][i]<<" ";
 		    }
 		    cout<<endl;
-		}
+		}*/
 	    return true;
  	}
  	bool routing(int h, vector< pair<int,int> >* result,pair<int,int> whole_die){ // 0:empty 1:obstacle 2:pin 3:wire  
 
-		cout<<"routing net "<<net_list[h].name<<endl;
+		//cout<<"routing net "<<net_list[h].name<<endl;
 
 		node source_node = net_list[h].source , target_node = net_list[h].target; 
 		priority_queue< node*, vector<node*>, CmpNodePtrs > open;  
@@ -201,9 +201,9 @@ public:
 			if(*current == target_node){ 
 				node* output = current;
 				(*result).push_back(make_pair(output->pos[0],output->pos[1]));
-				cout<<(*output)<<endl; 
+				//cout<<(*output)<<endl; 
 				while(output->parent!=NULL){
-					cout<<*(output->parent)<<endl; 
+					//cout<<*(output->parent)<<endl; 
 					output = output->parent;
 					(*result).push_back(make_pair(output->pos[0],output->pos[1]));
 					is_empty[output->pos[0]][output->pos[1]] = 3; 
@@ -267,6 +267,8 @@ int main(int argc,char** argv){
 	for(int i=0;i<(*result).size();i++){
 		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}*/
+	ofstream filePtr;                       
+	filePtr.open(argv[2], ios::out);    
 	
 	int ** die_area = astar.is_empty;
 	int x_max = astar.x_max , y_max = astar.y_max;
@@ -274,26 +276,37 @@ int main(int argc,char** argv){
 	node s = astar.net_list[0].source;
 	node t = astar.net_list[0].target; 
 	router tmp;
-	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result)<<endl;
+	filePtr<<"routing net "<<net_name<<endl;
+	bool success = tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result);
+	if(success) filePtr<<"Success"<<endl;
+	else filePtr<<"Fail"<<endl;
 	for(int i=0;i<(*result).size();i++){
-		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+		filePtr<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}
 
 	(*result).clear(); 
 	net_name = astar.net_list[1].name;
 	s = astar.net_list[1].target;
 	t = astar.net_list[1].source; 
-	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result)<<endl;
+	filePtr<<"routing net "<<net_name<<endl;
+	success = tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result);
+	if(success) filePtr<<"Success"<<endl;
+	else filePtr<<"Fail"<<endl;
 	for(int i=0;i<(*result).size();i++){
-		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+		filePtr<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}
 
 	(*result).clear(); 
 	net_name = astar.net_list[2].name;
 	s = astar.net_list[2].source;
 	t = astar.net_list[2].target;  
-	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result)<<endl;
+	filePtr<<"routing net "<<net_name<<endl;
+	success = tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result);
+	if(success) filePtr<<"Success"<<endl;
+	else filePtr<<"Fail"<<endl;
 	for(int i=0;i<(*result).size();i++){
-		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
+		filePtr<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}
+
+	filePtr.close(); 
 }
