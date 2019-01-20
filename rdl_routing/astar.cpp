@@ -31,7 +31,7 @@ public:
 		return out;
 	}
 	int pos[2];
-	int g_cost , h_cost , f_cost;
+	double g_cost , h_cost , f_cost;
 	node* parent;
 }; 
 
@@ -159,10 +159,10 @@ public:
     	} 
 
 		// Record the best distance to a node
-		int** shortest_value;
-		shortest_value = new int* [whole_die.first+1];
+		double** shortest_value;
+		shortest_value = new double* [whole_die.first+1];
     	for(int i=0;i<=whole_die.first;i++){
-    		shortest_value[i] = new int[whole_die.second+1];
+    		shortest_value[i] = new double[whole_die.second+1];
     	} 
     	for(int i=whole_die.second-y_min;i>=0;i--){
     		for(int j=0;j<=whole_die.first;j++){
@@ -222,7 +222,8 @@ public:
 					if( (j * k != 0) && (is_empty[current->pos[0] + j ][current->pos[1]] != 0 && is_empty[current->pos[0]][current->pos[1] + k ] != 0)) continue; 
 
 					node* candidate = new node(current->pos[0]+j , current->pos[1]+k);  
-					candidate->g_cost = current->g_cost + 1 ;
+					if(k*j == 0) candidate->g_cost = current->g_cost + 1 ;
+					else candidate->g_cost = current->g_cost + pow(2,0.5) ;
 					candidate->h_cost = candidate->manhattan_distance(target_node);
 					candidate->set_f_cost(); 
 
@@ -273,7 +274,7 @@ int main(int argc,char** argv){
 	node s = astar.net_list[0].source;
 	node t = astar.net_list[0].target; 
 	router tmp;
-	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,5),make_pair(1,0),make_pair(x_max,y_max),result)<<endl;
+	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result)<<endl;
 	for(int i=0;i<(*result).size();i++){
 		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}
@@ -282,7 +283,7 @@ int main(int argc,char** argv){
 	net_name = astar.net_list[1].name;
 	s = astar.net_list[1].target;
 	t = astar.net_list[1].source; 
-	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,5),make_pair(1,0),make_pair(x_max,y_max),result)<<endl;
+	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result)<<endl;
 	for(int i=0;i<(*result).size();i++){
 		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}
@@ -291,7 +292,7 @@ int main(int argc,char** argv){
 	net_name = astar.net_list[2].name;
 	s = astar.net_list[2].source;
 	t = astar.net_list[2].target;  
-	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,5),make_pair(1,0),make_pair(x_max,y_max),result)<<endl;
+	cout<<tmp.routing_diea_area(die_area,net_name,s,t,make_pair(x_max,y_max),make_pair(0,0),make_pair(x_max,y_max),result)<<endl;
 	for(int i=0;i<(*result).size();i++){
 		cout<<(*result)[i].first<<" "<<(*result)[i].second<<endl;
 	}

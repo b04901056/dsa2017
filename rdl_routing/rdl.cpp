@@ -1,4 +1,4 @@
-#include <bits/stdc++.h>    
+#include <bits/stdc++.h>  
 using namespace std;  
 
 typedef pair<int,int> node_pair;
@@ -244,6 +244,11 @@ public:
 		pos[1] = y; 
 		parent = NULL; 
 	}
+	node(pair<int,int> p){
+		pos[0] = p.first;
+		pos[1] = p.second; 
+		parent = NULL; 
+	}
 	int operator[](int x){
 		return pos[x];
 	}
@@ -265,24 +270,184 @@ public:
 		return out;
 	}
 	int pos[2];
-	int g_cost , h_cost , f_cost;
+	double g_cost , h_cost , f_cost;
 	node* parent;
 }; 
 
+
 class net{
 public:
-	net(string n,string i,string p,node x,node y){
+	net(string n , string i , string p , node x , node y , int** is_empty){
 		name = n;
-		source = y;
-		target = x;  
+		source = x;
+		target = y; 
 		io = i;
-		pad = p;
-		node_path.push_back(source);
+		pad = p; 
+		is_empty[source[0]][source[1]] = 2;
+		is_empty[target[0]][target[1]] = 2;
 	}
+	net(string n , node x , node y , int** is_empty){
+		name = n;
+		source = x;
+		target = y;  
+		is_empty[source[0]][source[1]] = 2;
+		is_empty[target[0]][target[1]] = 2;
+	} 
 	string name,io,pad;
 	node source , target; 
 	vector<node> node_path; 
+}; 
+
+class obstacle{
+public:
+	obstacle(string n , node a , node b , int** is_empty){
+		name = n;
+		bottom_left = a;
+		top_right = b;
+		for(int i=bottom_left[0];i<=top_right[0];i++){
+			for(int j=bottom_left[1];j<=top_right[1];j++){
+				is_empty[i][j] = 1;
+			}
+		}
+	}
+	string name;
+	node bottom_left , top_right; 
 };
+ 
+struct CmpNodePtrs
+{
+    bool operator()(const node* lhs, const node* rhs) const
+    {
+        return lhs->f_cost > rhs->f_cost;
+    }
+};
+
+class router{
+public:
+	router(){
+		x_min = 0;
+		y_min = 0;
+	}
+	int** is_empty;
+ 	vector<net> net_list;
+ 	vector<obstacle> obstacle_list;
+ 	int x_max,y_max,x_min,y_min;
+
+ 	bool routing(int h, vector< pair<int,int> >* result,pair<int,int> whole_die){ // 0:empty 1:obstacle 2:pin 3:wire  
+
+		cout<<"routing net "<<net_list[h].name<<endl;
+
+		node source_node = net_list[h].source , target_node = net_list[h].target; 
+		priority_queue< node*, vector<node*>, CmpNodePtrs > open;  
+		
+		// Save the closed_set
+		node*** closed_set;
+		closed_set = new node** [whole_die.first+1];
+    	for(int i=0;i<=whole_die.first;i++){
+    		closed_set[i] = new node*[whole_die.second+1];
+    	} 
+    	for(int i=whole_die.second;i>=0;i--){
+    		for(int j=0;j<=whole_die.first;j++){
+    			closed_set[j][i] = NULL;
+    		}
+    	} 
+
+		// Record the best distance to a node
+		double** shortest_value;
+		shortest_value = new double* [whole_die.first+1];
+    	for(int i=0;i<=whole_die.first;i++){
+    		shortest_value[i] = new double[whole_die.second+1];
+    	} 
+    	for(int i=whole_die.second-y_min;i>=0;i--){
+    		for(int j=0;j<=whole_die.first;j++){
+    			shortest_value[j][i] = INT_MAX;
+    		}
+    	}    
+		// Initialization
+		node* init_node = new node;
+		*init_node = source_node; 
+		init_node->g_cost = 0;
+		init_node->h_cost = init_node->manhattan_distance(target_node); 
+		init_node->set_f_cost();
+
+		is_empty[source_node[0]][source_node[1]] = 0;  
+		is_empty[target_node[0]][target_node[1]] = 0;  
+
+		//closed_set[init_node->pos[0]][init_node->pos[1]] = init_node;
+		shortest_value[init_node->pos[0]][init_node->pos[1]] = init_node->f_cost;
+		open.push(init_node); 
+
+		// Searching
+		while(!open.empty()){ 
+			node* current = new node; 
+			while(true){
+				if(open.empty()) break;
+				current = open.top(); 
+				open.pop();	 
+				//if(closed_set[current->pos[0]][current->pos[1]] != NULL) continue;				//?
+				if(current->f_cost <= shortest_value[current->pos[0]][current->pos[1]]) break;
+			}  
+			//cout<<"Move node "<<(*current)<<" to the closed_set"<<endl; 
+			closed_set[current->pos[0]][current->pos[1]] = current;  
+
+			// Termination
+			if(*current == target_node){   
+				node* output = current;  
+				(*result).push_back(make_pair(output->pos[0],output->pos[1])); 
+				cout<<(*output)<<endl; 
+				while(output->parent!=NULL){ 
+					cout<<*(output->parent)<<endl; 
+					output = output->parent;
+					(*result).push_back(make_pair(output->pos[0],output->pos[1]));
+					is_empty[output->pos[0]][output->pos[1]] = 3; 
+				}
+				is_empty[source_node[0]][source_node[1]] = 2; 
+				is_empty[target_node[0]][target_node[1]] = 2; 
+				return true;
+			}
+
+			// Go through neighbors
+			for(int j=-1;j<=1;j++){
+				for(int k=-1;k<=1;k++){  
+					// If candidate is not traversable or in closed_set => skip  
+					if((j==0 && k==0)) continue;   
+					if((current->pos[0]+j < x_min ) || (current->pos[0]+j > x_max ) || (current->pos[1]+k < y_min)|| (current->pos[1]+k > y_max)) continue;
+					if( (j * k != 0) && (is_empty[current->pos[0] + j ][current->pos[1]] != 0 && is_empty[current->pos[0]][current->pos[1] + k ] != 0)) continue; 
+
+					node* candidate = new node(current->pos[0]+j , current->pos[1]+k);  
+					if(k*j == 0) candidate->g_cost = current->g_cost + 1 ;
+					else candidate->g_cost = current->g_cost + pow(2,0.5) ;
+					candidate->h_cost = candidate->manhattan_distance(target_node);
+					candidate->set_f_cost(); 
+
+					if(closed_set[candidate->pos[0]][candidate->pos[1]] != NULL) continue;
+					if(is_empty[candidate->pos[0]][candidate->pos[1]] != 0 ) continue;
+
+					// If new path to the candidate is shorter or candidate not in open set => update
+					candidate->parent = current; 
+					open.push(candidate);
+					//cout<<"Move node "<<(*candidate)<<" to the open_set "<<"f_cost = "<<candidate->f_cost<<endl;
+					if(candidate->f_cost < shortest_value[candidate->pos[0]][candidate->pos[1]]){
+						shortest_value[candidate->pos[0]][candidate->pos[1]] = candidate->f_cost;
+					}
+				}
+			}   
+		} 
+		return false;
+ 	}
+  	bool routing_diea_area(int** die_area,string name,node s,node t,pair<int,int> max_die,pair<int,int> min_die,pair<int,int> whole_die,vector< pair<int,int> >* result_path){
+ 		is_empty = die_area;
+ 		x_max = max_die.first;
+ 		y_max = max_die.second;
+ 		x_min = min_die.first;
+ 		y_min = min_die.second; 
+ 		net n(name,s,t,is_empty);
+ 		net_list.push_back(n);
+ 		bool success = routing(0,result_path,whole_die);
+ 		net_list.clear();
+ 		return success;
+ 	}
+}; 
 
 class rdl{
 public:
@@ -300,11 +465,12 @@ public:
 	vector<string> bump_pad_list;
 	map<string , pair<int,int> > bump_pad_position;
 	vector< vector<string> > pad_string;
+	vector<string> io_connected_pad;
 
 	vector< vector<string> > LCS_string;
 	vector< vector<string> > result_string;
+	vector< vector<string> > mpsc_priority;
 
-	vector<string> io_connected_pad;
 
 	int** die_area; // 0:empty 1:bump_pad 2:io 3:wire 
 
@@ -342,17 +508,17 @@ public:
 		    else if(strcmp(buffer[0],"IO")==0){
   				io_string.push_back(buffer[1]);
   				io_position[buffer[1]] = make_pair(atoi(buffer[2]),atoi(buffer[3]));
-  				die_area[atoi(buffer[2])][atoi(buffer[3])] = 2;
+  				//die_area[atoi(buffer[2])][atoi(buffer[3])] = 2;
 		    } 
 		    else if(strcmp(buffer[0],"BUMP")==0){  
    				bump_pad_list.push_back(buffer[1]);
    				bump_pad_position[buffer[1]] = make_pair(atoi(buffer[2]),atoi(buffer[3])); 
-   				die_area[atoi(buffer[2])][atoi(buffer[3])] = 2; 
+   				//die_area[atoi(buffer[2])][atoi(buffer[3])] = 2; 
 		    } 
 		    else if(strcmp(buffer[0],"NET")==0){ 
 		    	node a(io_position[buffer[2]].first,io_position[buffer[2]].second);
 		    	node b(bump_pad_position[buffer[3]].first,bump_pad_position[buffer[3]].second); 
-  				net n(buffer[1],buffer[2],buffer[3],a,b);
+  				net n(buffer[1],buffer[2],buffer[3],a,b,die_area);
 		    	net_list.push_back(n);   
 		    }  
 		    buffer.clear();
@@ -449,14 +615,14 @@ public:
 		reverse(pad_string.begin(),pad_string.end()); 
 	}
 	void compute_lcs(){
-		cout<<"pad_string:"<<endl;
+		/*cout<<"pad_string:"<<endl;
 		for(int i=0;i<pad_string.size();i++){
 			for(int j=0;j<pad_string[i].size();j++){
 				cout<<pad_string[i][j]<<" ";
 			}
 			cout<<endl; 
-		}
-		cout<<endl;  
+		}*/
+		//cout<<endl;  
 		for(int i=0;i<io_string.size();i++){
 			for(int j=0;j<net_list.size();j++){
 				if(net_list[j].io == io_string[i]){
@@ -465,25 +631,25 @@ public:
 				}
 			}
 		}
-		cout<<"io_string:"<<endl;
+		/*cout<<"io_string:"<<endl;
 		for(int i=0;i<io_connected_pad.size();i++){
 			cout<<io_connected_pad[i]<<" ";
 		}
-		cout<<endl<<endl;
+		cout<<endl<<endl;*/
 
 		for(int i=1;i<pad_string.size();i++){
 			lcs lcs_object(io_connected_pad,pad_string[i]);
 			LCS_string.push_back(lcs_object.LCS()); 
 		}
 
-		cout<<"LCS:"<<endl;
+		/*cout<<"LCS:"<<endl;
 		for(int i=0;i<LCS_string.size();i++){
 			for(int j=0;j<LCS_string[i].size();j++){
 				cout<<LCS_string[i][j]<<" ";
 			}
 			cout<<endl;
 		}
-		cout<<endl;
+		cout<<endl;*/
 	}
 	void compute_net_sequence(){ 
 		result_string.push_back(pad_string[0]);
@@ -505,10 +671,10 @@ public:
 					}	 
 					io_current_point++;
 				}  
-				for(int j=0;j<tmp.size();j++){
+				/*for(int j=0;j<tmp.size();j++){
 					cout<<tmp[j]<<" ";
 				}
-				cout<<endl<<endl;  
+				cout<<endl<<endl;*/  
 				while(pad_string[i][pad_current_point] != LCS_string[i-1][j]){  
 					auto  it = find(io_connected_pad.begin(), io_connected_pad.end(), pad_string[i][pad_current_point]);
 					if(it != io_connected_pad.end()){
@@ -517,30 +683,31 @@ public:
 					}	 
 					pad_current_point++; 
 				}  
-				for(int j=0;j<tmp.size();j++){
+				/*for(int j=0;j<tmp.size();j++){
 					cout<<tmp[j]<<" ";
 				}
-				cout<<endl<<endl;
+				cout<<endl<<endl;*/
 				if(tmp_current_point + count != tmp.size()){
 					for(int k=0;k<count;k++){
 						tmp.push_back(tmp[tmp_current_point + k]);
 					}
 				} 
-				for(int j=0;j<tmp.size();j++){
+				/*for(int j=0;j<tmp.size();j++){
 					cout<<tmp[j]<<" ";
 				}
-				cout<<endl<<"============="<<endl;
+				cout<<endl<<"============="<<endl;*/
 
 				tmp_current_point = tmp.size();
 				io_current_point++;
 				pad_current_point++;
 			}
-			cout<<endl<<"======================================="<<endl;
+			//cout<<endl<<"======================================="<<endl;
 			// after the last LCS element
 			int count = 0;
 			while(io_current_point < io_connected_pad.size()){ 
 				auto  it = find(pad_string[i].begin(), pad_string[i].end(), io_connected_pad[io_current_point]);
-				if(it != pad_string[i].end()){
+				auto  it_ = find(result_string[i-1].begin(), result_string[i-1].end(), io_connected_pad[io_current_point]);
+				if(it != pad_string[i].end() || it_ != result_string[i-1].end()){
 					tmp.push_back(io_connected_pad[io_current_point]); 
 					count++;
 				}	 
@@ -548,8 +715,7 @@ public:
 			}  
 			while(pad_current_point < pad_string[i].size()){  
 				auto  it = find(io_connected_pad.begin(), io_connected_pad.end(), pad_string[i][pad_current_point]);
-				auto  it_ = find(result_string[i-1].begin(), result_string[i-1].end(), io_connected_pad[io_current_point]);
-				if(it != pad_string[i].end() || it_ != result_string[i-1].end()){
+				if(it != io_connected_pad.end()){
 					tmp.push_back(pad_string[i][pad_current_point]);  
 					present_detour_source[pad_string[i][pad_current_point]] = tmp.size() - 1;
 				}	 
@@ -561,27 +727,27 @@ public:
 				}
 			} 
 
-			for(int j=0;j<tmp.size();j++){
+			/*for(int j=0;j<tmp.size();j++){
 				cout<<tmp[j]<<" ";
 			}
-			cout<<endl;
+			cout<<endl;*/
 
 			// construct mpsc object
 			vector< pair<int,int> > mpsc_pair;
 			map<string,int> present_detour_num; 
 
 			for(auto it = present_detour_source.begin();it != present_detour_source.end();it++){
-				cout<<it->first<<" : "<<it->second<<"  ";
+				//cout<<it->first<<" : "<<it->second<<"  ";
 				present_detour_num[it->first] = -2;
 			}
-			cout<<endl;
+			//cout<<endl;
 			for(int j=0;j<tmp.size();j++){
 				if(present_detour_source.find(tmp[j]) != present_detour_source.end()) present_detour_num[tmp[j]] += 1;
 			}
-			for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
+			/*for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
 				cout<<it->first<<" : "<<it->second<<"  ";
 			}
-			cout<<endl;
+			cout<<endl;*/
 			for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
 				for(int k=0;k<it->second;k++){
 					tmp.insert(tmp.begin() + present_detour_source[it->first],it->first);
@@ -590,6 +756,7 @@ public:
 					}
 				}
 			}
+
 			for(auto it = present_detour_num.begin();it != present_detour_num.end();it++){
 				int start = 0,end = tmp.size()-1;
 				while(true){ 
@@ -600,11 +767,7 @@ public:
 					start++;
 					end--;
 				}
-			}
-			for(int j=0;j<mpsc_pair.size();j++){
-				cout<<mpsc_pair[j].first<<" "<<mpsc_pair[j].second<<endl;
-			}
-			cout<<endl;
+			}  
 			for(int j=result_string[i-1].size()-1;j>=0;j--){
 				int term = tmp.size();
 				for(int k=0;k<term;k++){
@@ -615,13 +778,22 @@ public:
 					}
 				}
 			}
+			/*for(int j=0;j<tmp.size();j++){
+				cout<<tmp[j]<<" ";
+			}
+			cout<<endl;
 
+			for(auto it = present_detour_source.begin();it != present_detour_source.end();it++){
+				cout<<it->first<<" : "<<it->second<<"  "; 
+			}
+			cout<<endl;
 			for(int j=0;j<mpsc_pair.size();j++){
 				cout<<mpsc_pair[j].first<<" "<<mpsc_pair[j].second<<endl;
 			} 
-			cout<<endl;
+			cout<<endl;*/
 
 			// calculate result_string 
+
 			int* pair_table;
 			pair_table = new int[mpsc_pair.size()*2];
 			for(int j=0;j<mpsc_pair.size();j++){
@@ -632,16 +804,88 @@ public:
 			mpsc_object.execute_rdl(mpsc_pair.size()*2,pair_table);
 			vector<node_pair>* mis = mpsc_object.result();
 
-			for(int j=0;j<(*mis).size();j++){
+			/*for(int j=0;j<(*mis).size();j++){
 				cout<<(*mis)[j].first<<" "<<(*mis)[j].second<<endl;
 			}
-			cout<<endl;
+			cout<<endl;*/
+
+			vector<string> tmp_mpsc;
+			for(int j=0;j<(*mis).size();j++){
+				tmp_mpsc.push_back(tmp[(*mis)[j].first]);
+			}
+			mpsc_priority.push_back(tmp_mpsc);
 
 			// 選 present_detour_source 的另外一個 !
 
-			// update net path
+			/*for(auto it = present_detour_source.begin();it != present_detour_source.end();it++){
+				cout<<it->first<<" : "<<it->second<<"  "; 
+			}
+			cout<<endl<<"============"<<endl;*/ 
 
+			vector<string> v;
+			set<string> not_selected_add;
+			for(int j=0;j<tmp.size();j++){
+				auto  it = find(result_string[i-1].begin(), result_string[i-1].end(), tmp[j]);
+				if(it != result_string[i-1].end()){
+					if(present_detour_source[tmp[j]] != j && present_detour_source[tmp[j]] != j+1){ 
+						bool add = false, not_selected = true;
+						for(int k=0;k<(*mis).size();k++){
+							if((*mis)[k].first == j || (*mis)[k].second == j){
+								add = true;
+								break;
+							}
+							if(tmp[(*mis)[k].first] == tmp[j] || tmp[(*mis)[k].second] == tmp[j]){
+								not_selected = false;
+							}
+						}
+						if(not_selected && not_selected_add.count(tmp[j]) != 0) not_selected = false;
+						if(add || not_selected){
+							 v.push_back(tmp[j]); 
+							 if(not_selected) not_selected_add.insert(tmp[j]);
+						}
+					}
+				}
+				else{
+					if(present_detour_source[tmp[j]] != j){
+						bool add = false, not_selected = true;
+						for(int k=0;k<(*mis).size();k++){
+							if((*mis)[k].first == j || (*mis)[k].second == j){
+								add = true;
+								break;
+							}
+							if(tmp[(*mis)[k].first] == tmp[j] || tmp[(*mis)[k].second] == tmp[j]){
+								not_selected = false;
+							}
+						}
+						if(not_selected && not_selected_add.count(tmp[j]) != 0) not_selected = false;
+						if(add || not_selected){
+							 v.push_back(tmp[j]); 
+							 if(not_selected) not_selected_add.insert(tmp[j]);
+						}
+					}
+				} 
+			} 
+			tmp = v;
+			/*for(int j=0;j<tmp.size();j++){
+				cout<<tmp[j]<<" ";
+			}
+			cout<<endl; */
 
+			int lcs_point = 0,tmp_point = 0,io_connected_pad_point = 0;
+			while(true){
+				if(io_connected_pad[io_connected_pad_point] == LCS_string[i-1][lcs_point]){
+					tmp.insert(tmp.begin()+tmp_point,io_connected_pad[io_connected_pad_point]);
+					lcs_point++;
+					tmp_point++;
+				}
+				else if(io_connected_pad[io_connected_pad_point] == tmp[tmp_point]){
+					tmp_point++;
+				}
+				io_connected_pad_point++; 
+				if(lcs_point == LCS_string[i-1].size() || io_connected_pad_point == io_connected_pad.size()) break; 
+			} 
+
+			result_string.push_back(tmp); 
 		}
 	}
 }; 
@@ -652,8 +896,43 @@ int main(int argc, char** argv){
 	rdl_object.compute_pad_string();
 	rdl_object.compute_lcs();
 	rdl_object.compute_net_sequence();
+	cout<<endl<<"==========================================================="<<endl; 
+	cout<<"result_string:"<<endl;
+	for(int i=0;i<rdl_object.result_string.size();i++){
+		for(int j=0;j<rdl_object.result_string[i].size();j++){
+			cout<<rdl_object.result_string[i][j]<<" ";
+		}
+		cout<<endl;
+	}
+	cout<<endl;
+	cout<<"LCS_string"<<endl;
+	for(int i=0;i<rdl_object.LCS_string.size();i++){
+		for(int j=0;j<rdl_object.LCS_string[i].size();j++){
+			cout<<rdl_object.LCS_string[i][j]<<" ";
+		}
+		cout<<endl;
+	}
+	cout<<endl;
+	cout<<"mpsc_priority:"<<endl;
+	for(int i=0;i<rdl_object.mpsc_priority.size();i++){
+		for(int j=0;j<rdl_object.mpsc_priority[i].size();j++){
+			cout<<rdl_object.mpsc_priority[i][j]<<" ";
+		}
+		cout<<endl;
+	}
+
+	/*router router_rdl;
+	vector< pair<int,int> >* result_path;
+	result_path = new vector< pair<int,int> >;
+	string net_name = "b_14";
+	node t(12,10);
+	pair<int,int> max,min,whole;
+	max = rdl_object.bump_pad_position["b_19"];
+	min = rdl_object.bump_pad_position["b_07"]; 
+	whole = make_pair(30,30);
+	cout<<router_rdl.routing_diea_area(rdl_object.die_area,net_name,node(rdl_object.bump_pad_position[net_name]),t,max,min,whole,result_path)<<endl;
 	
-	return 0;
+	return 0;*/
 }
 
 
